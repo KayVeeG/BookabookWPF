@@ -130,20 +130,16 @@ namespace BookabookWPF.Pages
                 control.VerticalAlignment = VerticalAlignment.Center;
                 control.Tag = property;
 
-                // Create checkbox for multiple instances
-                CheckBox? checkBox = null;
-                if (ModelInstances.Count > 1)
+                // Create checkbox for edit toggle
+                CheckBox? checkBox = new()
                 {
-                    checkBox = new()
-                    {
-                        IsChecked = autoEnable,
-                        VerticalAlignment = VerticalAlignment.Center,
-                        Tag = control
-                    };
-                    // Subscribe to checked changed event
-                    checkBox.Checked += OnCheckBoxCheckedChanged;
-                    checkBox.Unchecked += OnCheckBoxCheckedChanged;
-                }
+                    IsChecked = autoEnable,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Tag = control
+                };
+                // Subscribe to checked changed event
+                checkBox.Checked += OnCheckBoxCheckedChanged;
+                checkBox.Unchecked += OnCheckBoxCheckedChanged;
 
                 // Create enable/disable binding
                 Binding activationBinding = new()
@@ -426,7 +422,7 @@ namespace BookabookWPF.Pages
                 else
                 {
                     // Get the first backup value
-                    object firstBackupValue = property.GetValue(ModelInstancesBackup![0])?.ToString() ?? string.Empty;
+                    object? firstBackupValue = property.GetValue(ModelInstancesBackup![0]);
                     // Set the control value to the first backup value
                     SetControlValue(control, firstBackupValue);
                     // Load the backup for the property values independently from the first
