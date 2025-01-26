@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Controls;
 using BookabookWPF.Models;
 using BookabookWPF.Services.Bookabook.Services;
 
@@ -16,7 +17,13 @@ namespace BookabookWPF.Services
         public BookabookDatabase()
         {
             Debug.WriteLine(FullPath);
-            CreateTable<BookClass>();
+
+            // Create the database and tables if they don't exist
+            foreach (var modelType in Utility.FindClassesWithAttribute<Attributes.ModelAttribute>())
+            {
+                var method = typeof(BookabookDatabase).GetMethod("CreateTable")?.MakeGenericMethod(modelType);
+                method?.Invoke(this, null);
+            }
 
             if (GetList<BookClass>().Count == 0)
             {
