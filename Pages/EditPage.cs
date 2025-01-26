@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using BookabookWPF.Attributes;
 using BookabookWPF.Services;
@@ -23,6 +24,7 @@ namespace BookabookWPF.Pages
             set
             {
                 SetValue(ModelInstancesProperty, value);
+                // Backup the model instances
                 ModelInstancesBackup = ModelInstances?.ToList();
                 if (ModelInstancesBackup is not null)
                 {
@@ -30,13 +32,19 @@ namespace BookabookWPF.Pages
                     {
                         if (ModelInstancesBackup[i] is ICloneable cloneable)
                         {
+                            // Clone the model instances
                             ModelInstancesBackup[i] = cloneable.Clone();
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException("Model must implement ICloneable");
                         }
                     }
                 }
             }
         }
 
+        // List that stores model instances backup for undo
         protected IList<object>? ModelInstancesBackup { get; set; }
 
         public EditPage()
@@ -53,6 +61,33 @@ namespace BookabookWPF.Pages
             {
                 editPage.InitializeUI();
             }
+        }
+
+        protected bool ShouldAutoEnableEdit(PropertyInfo property)
+        {
+            // Check if data is available
+            if (ModelInstances is null || ModelInstances.Count == 0 || property is null) return false;
+
+            // Use the first instance as comparable reference
+            object? value = property.GetValue(ModelInstances[0]);
+
+            // Compare all with the first
+            foreach (var instance in ModelInstances)
+            {
+                // Get the other value to compare
+                object? otherValue = property.GetValue(instance);
+                // Return when slightest change is detected
+                if (value is null && otherValue is not null)
+                    return false;
+                else if (value is not null && otherValue is null)
+                    return false;
+                else if (value is not null && !value.Equals(otherValue))
+                    return false;
+            }
+
+            // Return true when all values are equal
+            return true;
+
         }
 
         protected void InitializeUI()
@@ -72,7 +107,7 @@ namespace BookabookWPF.Pages
             {
 
                 // Create a container for each property
-                var propertyContainer = new StackPanel
+                StackPanel propertyContainer = new()
                 {
                     Orientation = Orientation.Horizontal,
                     Margin = new Thickness(0, 0, 0, 10)
@@ -105,6 +140,7 @@ namespace BookabookWPF.Pages
                         VerticalAlignment = VerticalAlignment.Center,
                         Tag = control
                     };
+                    // Subscribe to checked changed event
                     checkBox.Checked += OnCheckBoxCheckedChanged;
                     checkBox.Unchecked += OnCheckBoxCheckedChanged;
                 }
@@ -120,206 +156,258 @@ namespace BookabookWPF.Pages
                 label.SetBinding(IsEnabledProperty, activationBinding);
                 control.SetBinding(IsEnabledProperty, activationBinding);
 
-                // Add controls
+                // Add controls to property container
                 if (checkBox is not null)
                     propertyContainer.Children.Add(checkBox);
                 propertyContainer.Children.Add(label);
                 propertyContainer.Children.Add(control);
 
+                // Add property container to stack panel
                 stackPanel.Children.Add(propertyContainer);
             }
 
-            // Make undo button and add it to the container
+            // Make undo button
             var undoButton = new Button
             {
                 Content = "Undo all edits",
                 Margin = new Thickness(0, 10, 0, 0)
             };
+
+            // Subscribe to click event
             undoButton.Click += UndoButton_Click;
+
+            // Add undo button to stack panel
             stackPanel.Children.Add(undoButton);
         }
 
         private FrameworkElement CreateControlForProperty(PropertyInfo property)
         {
+            #region VariablePreperation
+            // Abstract the property type
             Type propertyType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
-            var value = property.GetValue(ModelInstances[0])?.ToString() ?? string.Empty;
 
-            // Check for MultipleInDatabase attribute (ComboBox)
-            if (property.GetCustomAttribute<MultipleInDatabaseAttribute>() != null)
-            {
-                var comboBox = new ComboBox()
-                {
-                    // Set the value
-                    Text = value,
-                    // Make it user editable
-                    IsEditable = true,
-                    IsTextSearchEnabled = true,
-                    // Use distinct values from database
-                    ItemsSource = Globals.Database!.GetDistinctValues(property.DeclaringType!.Name, property.Name)
-                };
+            // Extract the property value from first element
+            object? value = property.GetValue(ModelInstances[0]);
+            #endregion VariablePreperation
 
-                // Subscribe to text changed event
-                comboBox.Loaded += (s, e) =>
-                {
-                    if (comboBox.Template.FindName("PART_EditableTextBox", comboBox) is TextBox textBox)
-                    {
-                        textBox.TextChanged += (sender, args) =>
-                        {
-                            if (comboBox.Tag is PropertyInfo prop)
-                            {
-                                UpdatePropertyValue(prop, textBox.Text);
-                            }
-                        };
-                    }
-                };
-
-                return comboBox;
-            }
-
+            #region TypeSwitching
             // Handle different property types
             switch (Type.GetTypeCode(propertyType))
             {
+                #region DateTime
+                // Case of DateTime
                 case TypeCode.DateTime:
-                    var datePicker = new DatePicker();
-                    if (DateTime.TryParse(value, out DateTime dateValue))
+                    #region DateTime control generation
+                    // Make date picker
+                    var datePicker = new DatePicker()
                     {
-                        datePicker.SelectedDate = dateValue;
-                    }
-                    datePicker.SelectedDateChanged += OnDatePickerChanged;
-                    return datePicker;
-
-                case TypeCode.Decimal:
-                    var numericUpDown = new Xceed.Wpf.Toolkit.DoubleUpDown
-                    {
-                        Value = decimal.TryParse(value, out decimal decimalValue) ? (double)decimalValue : 0.0,
-                        FormatString = "F2",  // Display 2 decimal places
-                        Minimum = 0,
-                        Increment = 0.01
+                        SelectedDate = (DateTime?)value, // Set the value
                     };
-                    numericUpDown.ValueChanged += (s, e) =>
+                    #endregion DateTime control generation
+
+                    #region DateTime event subscription
+                    // Subscribe to value changed event
+                    datePicker.SelectedDateChanged += (s, e) =>
+                    {
+                        if (s is DatePicker datePicker && datePicker.Tag is PropertyInfo property)
+                        {
+                            // Update the property value
+                            UpdatePropertyValues(property, datePicker.SelectedDate);
+                        }
+                    };
+                    // Subscribe to text changed event
+                    datePicker.Loaded += (s, e) => {
+                        var textBox = datePicker.Template.FindName("PART_TextBox", datePicker) as DatePickerTextBox;
+                        if (textBox != null)
+                        {
+                            textBox.TextChanged += (sender, args) => {
+                                // If text input is a valid date
+                                if (DateTime.TryParse(textBox.Text, out DateTime date))
+                                {
+                                    // Update the property value
+                                    UpdatePropertyValues(property, date);
+                                }
+                            };
+                        }
+                    };
+                    #endregion DateTime event subscription
+
+                    #region DateTime return
+                    // Return the date picker
+                    return datePicker;
+                #endregion DateTime return
+                #endregion DateTime
+
+                #region Decimal
+                // Case of decimal value (such as price for example)
+                case TypeCode.Decimal:
+                    #region Decimal control generation
+                    // Make double up down with third party library
+                    var doubleUpDown = new Xceed.Wpf.Toolkit.DoubleUpDown
+                    {
+                        Value = Convert.ToDouble(value), // Set the value
+                        FormatString = "F2",  // Display 2 decimal places
+                        Minimum = 0, // Minimum value
+                        Increment = 0.01 // Increment value of 1 cent
+                    };
+                    #endregion Decimal control generation
+
+                    #region Decimal event subscription
+                    // Subscribe to value changed event
+                    doubleUpDown.ValueChanged += (s, e) =>
                     {
                         if (s is Xceed.Wpf.Toolkit.DoubleUpDown nud && nud.Tag is PropertyInfo prop)
                         {
-                            UpdatePropertyValue(prop, nud.Value.ToString()!);
+                            // Update the property value
+                            UpdatePropertyValues(prop, (decimal?)nud.Value);
                         }
                     };
-                    return numericUpDown;
+                    #endregion Decimal event subscription
+
+                    #region Decimal return
+                    // Return the double up down
+                    return doubleUpDown;
+                #endregion Decimal return
+                #endregion Decimal
+
+                #region Int32
+                // Case of integer value
                 case TypeCode.Int32:
+                    #region Int32 RangeAttribute check
+                    // Check for Range attribute
                     var rangeAttr = property.GetCustomAttribute<RangeAttribute>();
                     if (rangeAttr != null)
                     {
-
+                        #region Int32 Range control generation
                         // Make container grid
                         Grid grid = new()
                         {
+                            // Define layout columns
                             ColumnDefinitions =
                             {
-                                new ColumnDefinition() {Width = new GridLength(1, GridUnitType.Auto)},
-                                new ColumnDefinition() {Width = new GridLength(1, GridUnitType.Star)}
-                            },
+                                new ColumnDefinition() {Width = new GridLength(1, GridUnitType.Auto)}, // Auto width for label
+                                new ColumnDefinition() {Width = new GridLength(1, GridUnitType.Star)} // Star width for slider
+                            }
                         };
 
                         // Make slider
                         Slider slider = new()
                         {
-                            Minimum = Convert.ToDouble(rangeAttr.Minimum),
-                            Maximum = Convert.ToDouble(rangeAttr.Maximum),
-                            Value = int.TryParse(value, out int intValue) ? intValue : Convert.ToDouble(rangeAttr.Minimum),
-                            IsSnapToTickEnabled = true,
-                            TickFrequency = 1,
-                            Tag = property
+                            Minimum = Convert.ToDouble(rangeAttr.Minimum), // Extract minimum value from range attribute
+                            Maximum = Convert.ToDouble(rangeAttr.Maximum), // Extract maximum value from range attribute
+                            Value = value is null ? Convert.ToDouble(rangeAttr.Minimum) : Convert.ToDouble(value), // Set the value depending on property value availability
+                            IsSnapToTickEnabled = true, // Snap to tick
+                            TickFrequency = 1, // Tick frequency is 1 since it's an integer
                         };
-                        // Subscribe to value changed event
-                        slider.ValueChanged += OnSliderValueChanged;
-
                         // Make value displaying label
                         TextBlock label = new();
+                        // Bind the label text to slider value
                         label.SetBinding(TextBlock.TextProperty, new Binding()
                         {
-                            Source = slider,
-                            Path = new PropertyPath(nameof(Slider.Value)),
-                            StringFormat = "{0:F0}",
-                            UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged,
-                            Mode = BindingMode.OneWay,
-                            // Add binding error handler
-                            NotifyOnSourceUpdated = true,
-                            NotifyOnTargetUpdated = true
+                            Source = slider, // Source is the slider
+                            Path = new PropertyPath(nameof(Slider.Value)), // Path is the value property of the slider
+                            StringFormat = "{0:F0}", // Format the value to integer
                         });
-
-                        // Add controls to grid
+                        // Set the grid column for label and slider
                         label.SetValue(Grid.ColumnProperty, 0);
                         slider.SetValue(Grid.ColumnProperty, 1);
+
+                        // Add controls to grid
                         grid.Children.Add(label);
                         grid.Children.Add(slider);
+                        #endregion Int32 Range control generation
+
+                        #region Int32 Range event subscription
+                        // Subscribe to value changed event
+                        slider.ValueChanged += (s, e) => {
+                            if (s is Slider slider && ((FrameworkElement)slider.Parent).Tag is PropertyInfo property)
+                            {
+                                // Update the property value
+                                UpdatePropertyValues(property, Convert.ToInt32(slider.Value));
+                            }
+                        };
+                        #endregion Int32 Range event subscription
+
+                        #region Int32 Range return
+                        // Return the grid
                         return grid;
+                        #endregion Int32 Range return
                     }
-                    goto default;
+                    else
+                    {
+                        goto default;
+                    }
+                #endregion Int32 RangeAttribute check
+                #endregion Int32
 
+                #region Default
+                // Default case is for string value
                 default:
-                    var textBox = new TextBox { Text = value };
-                    textBox.TextChanged += OnTextBoxChanged;
-                    return textBox;
+                    #region Default MultipleInDatabaseAttribute check
+                    if (property.GetCustomAttribute<MultipleInDatabaseAttribute>() != null)
+                    {
+                        #region Default MultipleInDatabase control generation
+                        // Make combo box
+                        var comboBox = new ComboBox()
+                        {
+                            Text = (string?)value, // Set the value
+                            IsEditable = true, // Make it user editable
+                            IsTextSearchEnabled = true, // Enable text search
+                            ItemsSource = Globals.Database!.GetDistinctValues(property.DeclaringType!.Name, property.Name) // Use distinct values from database
+                        };
+                        #endregion Default MultipleInDatabase control generation
+
+                        #region Default MultipleInDatabase event subscription
+                        // Subscribe to text changed event
+                        comboBox.Loaded += (s, e) =>
+                        {
+                            if (comboBox.Template.FindName("PART_EditableTextBox", comboBox) is TextBox textBox)
+                            {
+                                textBox.TextChanged += (sender, args) =>
+                                {
+                                    if (comboBox.Tag is PropertyInfo prop)
+                                    {
+                                        UpdatePropertyValues(prop, textBox.Text);
+                                    }
+                                };
+                            }
+                        };
+                        #endregion Default MultipleInDatabase event subscription
+
+                        #region Default MultipleInDatabase return
+                        return comboBox;
+                        #endregion Default MultipleInDatabase return
+                    }
+                    #endregion Default MultipleInDatabaseAttribute check
+                    else
+                    {
+                        #region Default TextBox
+                        #region Default control generation
+                        // Make text box
+                        var textBox = new TextBox { Text = (string?)value };
+                        #endregion Default control generation
+
+                        #region Default event subscription
+                        // Subscribe to text changed event
+                        textBox.TextChanged += (s, e) =>
+                        {
+                            if (s is TextBox textBox && textBox.Tag is PropertyInfo property)
+                            {
+                                // Update the property value
+                                UpdatePropertyValues(property, textBox.Text);
+                            }
+                        };
+                        #endregion Default event subscription
+
+                        #region Default return
+                        // Return the text box
+                        return textBox;
+                        #endregion Default return
+                        #endregion Default TextBox
+                    }
+                    #endregion Default
             }
-        }
-
-        private void OnComboBoxSelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (sender is ComboBox comboBox && comboBox.Tag is PropertyInfo property)
-            {
-                UpdatePropertyValue(property, comboBox.SelectedItem?.ToString() ?? string.Empty);
-            }
-        }
-
-        private void OnDatePickerChanged(object? sender, SelectionChangedEventArgs e)
-        {
-            if (sender is DatePicker datePicker && datePicker.Tag is PropertyInfo property)
-            {
-                UpdatePropertyValue(property, datePicker.SelectedDate?.ToString() ?? string.Empty);
-            }
-        }
-
-        private void OnSliderValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (sender is Slider slider && slider.Tag is PropertyInfo property)
-            {
-                UpdatePropertyValue(property, ((int)slider.Value).ToString());
-            }
-        }
-
-        // Existing methods remain the same
-        protected bool ShouldAutoEnableEdit(PropertyInfo property)
-        {
-            // Check if data is available
-            if (ModelInstances is null || ModelInstances.Count == 0 || property is null) return false;
-
-            // Use the first instance as comparable reference
-            object? value = property.GetValue(ModelInstances[0]);
-
-            // Compare all with the first
-            foreach (var instance in ModelInstances)
-            {
-                // Get the other value to compare
-                object? otherValue = property.GetValue(instance);
-                // Return when slightest change is detected
-                if (value is null && otherValue is not null)
-                    return false;
-                else if (value is not null && otherValue is null)
-                    return false;
-                else if (value is not null && !value.Equals(otherValue))
-                    return false;
-            }
-
-            // Return true when all values are equal
-            return true;
-
-        }
-
-        private void OnTextBoxChanged(object sender, TextChangedEventArgs e)
-        {
-            if (sender is TextBox textBox && textBox.Tag is PropertyInfo property)
-            {
-                UpdatePropertyValue(property, textBox.Text);
-            }
+            #endregion TypeSwitching
         }
 
         private void OnCheckBoxCheckedChanged(object sender, RoutedEventArgs e)
@@ -327,107 +415,102 @@ namespace BookabookWPF.Pages
             if (sender is CheckBox checkBox && checkBox.Tag is FrameworkElement control &&
                 control.Tag is PropertyInfo property)
             {
+                // If checkbox is checked
                 if (checkBox.IsChecked == true)
                 {
-                    string value = GetControlValue(control)!;
-                    UpdatePropertyValue(property, value);
+                    // Get the control value
+                    object? value = GetControlValue(control);
+                    // Apply the propety value on all instances
+                    UpdatePropertyValues(property, value);
                 }
                 else
                 {
-                    string backupValue = property.GetValue(ModelInstancesBackup![0])?.ToString() ?? string.Empty;
-                    SetControlValue(control, backupValue);
+                    // Get the first backup value
+                    object firstBackupValue = property.GetValue(ModelInstancesBackup![0])?.ToString() ?? string.Empty;
+                    // Set the control value to the first backup value
+                    SetControlValue(control, firstBackupValue);
+                    // Load the backup for the property values independently from the first
+                    LoadBackupForPropertyValue(property);
                 }
             }
         }
 
-        private string? GetControlValue(FrameworkElement control)
+        private object? GetControlValue(FrameworkElement control)
         {
             return control switch
             {
                 TextBox textBox => textBox.Text,
-                ComboBox comboBox => comboBox.Text ?? string.Empty,
-                DatePicker datePicker => datePicker.SelectedDate?.ToString() ?? string.Empty,
-                Slider slider => ((int)slider.Value).ToString(),
-                Xceed.Wpf.Toolkit.DoubleUpDown numericUpDown => numericUpDown.Value.ToString(),
-                _ => string.Empty
-            };
-        }
-
-        private void SetControlValue(FrameworkElement control, string value)
-        {
-            switch (control)
-            {
-                case TextBox textBox:
-                    textBox.Text = value;
-                    break;
-                case ComboBox comboBox:
-                    comboBox.Text = value;
-                    break;
-                case DatePicker datePicker:
-                    if (DateTime.TryParse(value, out DateTime dateValue))
-                        datePicker.SelectedDate = dateValue;
-                    break;
-                case Slider slider:
-                    if (int.TryParse(value, out int intValue))
-                        slider.Value = intValue;
-                    break;
-                case Xceed.Wpf.Toolkit.DoubleUpDown numericUpDown:
-                    if (double.TryParse(value, out double doubleValue))
-                        numericUpDown.Value = doubleValue;
-                    break;
-            }
-        }
-
-        protected void UpdatePropertyValue(PropertyInfo property, string value)
-        {
-            foreach (var instance in ModelInstances)
-            {
-                var setter = property.GetSetMethod();
-                if (setter != null)
-                {
-                    object? convertedValue = ConvertValue(value, property.PropertyType);
-                    if (convertedValue != null)
-                    {
-                        setter.Invoke(instance, new[] { convertedValue });
-                    }
-                }
-            }
-        }
-
-        private object? ConvertValue(string value, Type targetType)
-        {
-            if (string.IsNullOrEmpty(value))
-                return null;
-
-            Type underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-
-            return underlyingType.Name switch
-            {
-                nameof(String) => value,
-                nameof(DateTime) => DateTime.TryParse(value, out DateTime dateValue) ? dateValue : null,
-                nameof(Decimal) => decimal.TryParse(value, out decimal decimalValue) ?
-                    Math.Round(decimalValue, 2) : null,
-                nameof(Int32) => int.TryParse(value, out int intValue) ? intValue : null,
+                ComboBox comboBox => comboBox.Text,
+                DatePicker datePicker => datePicker.SelectedDate,
+                Grid sliderGrid => Convert.ToInt32(sliderGrid.Children.OfType<Slider>().First().Value),
+                Xceed.Wpf.Toolkit.DoubleUpDown numericUpDown => (decimal?)numericUpDown.Value,
                 _ => null
             };
         }
 
-        private void UndoButton_Click(object sender, RoutedEventArgs e)
+        private void SetControlValue(FrameworkElement control, object? value)
         {
-            if (ModelInstancesBackup is null || ModelInstances is null) return;
-
-            var stackPanel = (StackPanel)Content;
-            foreach (StackPanel propertyContainer in stackPanel.Children.OfType<StackPanel>())
+            switch (control)
             {
-                var control = propertyContainer.Children.OfType<FrameworkElement>()
-                    .FirstOrDefault(c => c.Tag is PropertyInfo);
+                case TextBox textBox:
+                    textBox.Text = (string?)value;
+                    break;
+                case ComboBox comboBox:
+                    comboBox.Text = (string?)value;
+                    break;
+                case DatePicker datePicker:
+                    datePicker.SelectedDate = (DateTime?)value;
+                    break;
+                case Grid sliderGrid:
+                    sliderGrid.Children.OfType<Slider>().First().Value = Convert.ToDouble(value);
+                    break;
+                case Xceed.Wpf.Toolkit.DoubleUpDown numericUpDown:
+                    numericUpDown.Value = Convert.ToDouble(value);
+                    break;
+            }
+        }
 
-                if (control?.Tag is PropertyInfo property)
+        protected void UpdatePropertyValues(PropertyInfo property, object? value)
+        {
+            foreach (var instance in ModelInstances)
+            {
+                MethodInfo? setter = property.GetSetMethod();
+                if (setter != null)
                 {
-                    var backupValue = property.GetValue(ModelInstancesBackup[0])?.ToString() ?? string.Empty;
-                    SetControlValue(control, backupValue);
+                    setter.Invoke(instance, new[] { value });
                 }
             }
+        }
+
+        protected void LoadBackupForPropertyValue(PropertyInfo property)
+        {
+            for (int i = 0; i < ModelInstances.Count; i++)
+            {
+                // Get the backup value
+                object? backupValue = property.GetValue(ModelInstancesBackup![i] is ICloneable cloneable
+                    ? cloneable.Clone() // Clone the model instance
+                    : throw new InvalidOperationException("Model must implement ICloneable")); // Throw exception if model does not implement ICloneable
+
+                // Get the setter method
+                MethodInfo? setter = property.GetSetMethod();
+                if (setter != null)
+                {
+                    // Set the property value
+                    setter.Invoke(ModelInstances[i], new[] { backupValue });
+                }
+            }
+        }
+
+        private void UndoButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Load the backup for all properties
+            foreach (var property in ((ModelBase)ModelInstances[0]).GetDataProperties())
+            {
+                // Load the backup for the property
+                LoadBackupForPropertyValue(property);
+            }
+            // Reinitialize the UI
+            InitializeUI();
         }
     }
 }
