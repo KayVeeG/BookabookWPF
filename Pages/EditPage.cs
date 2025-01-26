@@ -227,6 +227,7 @@ namespace BookabookWPF.Pages
                             Value = int.TryParse(value, out int intValue) ? intValue : Convert.ToDouble(rangeAttr.Minimum),
                             IsSnapToTickEnabled = true,
                             TickFrequency = 1,
+                            Tag = property
                         };
                         // Subscribe to value changed event
                         slider.ValueChanged += OnSliderValueChanged;
