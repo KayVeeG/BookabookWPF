@@ -104,6 +104,7 @@ namespace BookabookWPF.Models
             }
         }
 
+        [MustBePositive]
         public decimal? Price
         {
             get => _price;

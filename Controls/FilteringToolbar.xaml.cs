@@ -17,6 +17,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using BookabookWPF.Attributes;
 
 namespace BookabookWPF.Controls
 {
@@ -63,9 +64,13 @@ namespace BookabookWPF.Controls
                 return;
 
             // Get all properties of the model type
-            var properties = Activator.CreateInstance(ModelType)!.GetType().GetProperties();
+            var properties = ((ModelBase)(Activator.CreateInstance(ModelType)!)).GetDataProperties();
             foreach (var property in properties)
             {
+                // Check if property is string but not has the MultipleInDatabase attribute
+                if (property.PropertyType == typeof(string) && property.GetCustomAttribute<MultipleInDatabaseAttribute>() is null)
+                    continue;
+
                 FilterDropDown filterDropDown = new() { PropertyInfo = property };
                 FilterDropDownPanel.Children.Add(filterDropDown);
             }
