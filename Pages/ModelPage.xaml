@@ -28,15 +28,30 @@
                 </Style>
                 <BooleanToVisibilityConverter x:Key="BoolToVis"/>
                 <converters:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVis"/>
+                <converters:IntegerToBooleanConverter x:Key="IntegerToBooleanConverter"/>
             </StackPanel.Resources>
+
             <Button Click="Add_Click" Content="Add" 
-            Visibility="{Binding ChoosingEnabled, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource InverseBoolToVis}}"/>
+            Visibility="{Binding ChoosingEnabled, RelativeSource={RelativeSource AncestorType=Page}, 
+                         Converter={StaticResource InverseBoolToVis}}"/>
+
             <Button Click="Edit_Click" Content="Edit"
-            Visibility="{Binding ChoosingEnabled, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource InverseBoolToVis}}"/>
+            IsEnabled="{Binding ElementName=modelView, Path=SelectedItems.Count, 
+                      Converter={StaticResource IntegerToBooleanConverter}}"
+            Visibility="{Binding ChoosingEnabled, RelativeSource={RelativeSource AncestorType=Page}, 
+                         Converter={StaticResource InverseBoolToVis}}"/>
+
             <Button Click="Remove_Click" Content="Remove"
-            Visibility="{Binding ChoosingEnabled, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource InverseBoolToVis}}"/>
+            IsEnabled="{Binding ElementName=modelView, Path=SelectedItems.Count, 
+                      Converter={StaticResource IntegerToBooleanConverter}}"
+            Visibility="{Binding ChoosingEnabled, RelativeSource={RelativeSource AncestorType=Page}, 
+                         Converter={StaticResource InverseBoolToVis}}"/>
+
             <Button Click="Choose_Click" Content="Choose"
-            Visibility="{Binding ChoosingEnabled, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource BoolToVis}}"/>
+            IsEnabled="{Binding ElementName=modelView, Path=SelectedItems.Count, 
+                      Converter={StaticResource IntegerToBooleanConverter}}"
+            Visibility="{Binding ChoosingEnabled, RelativeSource={RelativeSource AncestorType=Page}, 
+                         Converter={StaticResource BoolToVis}}"/>
         </StackPanel>
 
 
