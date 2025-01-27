@@ -17,6 +17,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using BookabookWPF.Attributes;
 
 namespace BookabookWPF.Controls
 {
@@ -37,7 +38,7 @@ namespace BookabookWPF.Controls
             get => (Type)GetValue(ModelTypeProperty);
             set => SetValue(ModelTypeProperty, value);
         }
-            
+
         public FilteringToolbar()
         {
             InitializeComponent();
@@ -51,8 +52,6 @@ namespace BookabookWPF.Controls
             }
 
         }
-
-
         protected void InitializeUI()
         {
             // Clear everything up
@@ -65,12 +64,32 @@ namespace BookabookWPF.Controls
                 return;
 
             // Get all properties of the model type
-            var properties = Activator.CreateInstance(ModelType)!.GetType().GetProperties();
+            var properties = ((ModelBase)(Activator.CreateInstance(ModelType)!)).GetDataProperties();
             foreach (var property in properties)
             {
+                // Check if property is string but not has the MultipleInDatabase attribute
+                if (property.PropertyType == typeof(string) && property.GetCustomAttribute<MultipleInDatabaseAttribute>() is null)
+                    continue;
+
                 FilterDropDown filterDropDown = new() { PropertyInfo = property };
+                // Subscribe to the FilterChanged event
+                filterDropDown.FilterChanged += OnFilterChanged;
                 FilterDropDownPanel.Children.Add(filterDropDown);
             }
+        }
+
+        public void UpdateFilterDropDowns()
+        {
+            foreach (FilterDropDown filterDropDown in FilterDropDownPanel.Children)
+            {
+                filterDropDown.InitializeUI();
+            }
+
+        }
+
+        private void OnFilterChanged(object? sender, Filter e)
+        {
+            
         }
 
     }

@@ -67,7 +67,7 @@
 
         
         <!-- Filtering Toolbar -->
-        <controls:FilteringToolbar Grid.Row="1" ModelType="{Binding ModelType, RelativeSource={RelativeSource AncestorType=pages:ModelPage}}"/>
+        <controls:FilteringToolbar x:Name="FilteringToolbar" Grid.Row="1" ModelType="{Binding ModelType, RelativeSource={RelativeSource AncestorType=pages:ModelPage}}"/>
 
         <!-- List View for displaying database -->
         <ListView x:Name="modelView" Grid.Row="2" Style="{StaticResource EnhancedListView}"/>
