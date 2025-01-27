@@ -53,6 +53,7 @@
             <RowDefinition Height="100" />
             <RowDefinition Height="50"/>
             <RowDefinition Height="50"/>
+            <RowDefinition Height="50"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="70"/>
         </Grid.RowDefinitions>
@@ -63,9 +64,9 @@
             <TextBlock Text="Bookabook" Foreground="{StaticResource PrimaryBlueBrush}"  FontSize="32" VerticalAlignment="Center"/>
         </StackPanel>
 
-        <ListView x:Name="modelView" Grid.Row="3" Style="{StaticResource EnhancedListView}"/>
+        <ListView x:Name="modelView" Grid.Row="4" Style="{StaticResource EnhancedListView}"/>
 
-        <StackPanel Orientation="Horizontal" Grid.Row="4" Background="{StaticResource LightGrayBrush}"
+        <StackPanel Orientation="Horizontal" Grid.Row="5" Background="{StaticResource LightGrayBrush}"
                     VerticalAlignment="Center">
             <Button Click="Add_Click" Content="Add" 
                     Visibility="{Binding ChoosingEnabled, RelativeSource={RelativeSource AncestorType=Page}, 
