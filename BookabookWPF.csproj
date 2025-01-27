@@ -17,5 +17,8 @@
 		<Resource Include="Resources\icon.ico">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Resource>
+		<Resource Include="Resources\logo.png">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Resource>
 	</ItemGroup>
 </Project>

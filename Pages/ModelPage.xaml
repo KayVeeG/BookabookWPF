@@ -50,13 +50,18 @@
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="50" />
+            <RowDefinition Height="100" />
             <RowDefinition Height="50"/>
             <RowDefinition Height="50"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="70"/>
         </Grid.RowDefinitions>
-       
+
+        <!-- Bookabook Logo, image then text centered -->
+        <StackPanel Orientation="Horizontal" Grid.Row="0" HorizontalAlignment="Center" Margin="0">
+            <Image Source="/BookabookWPF;component/Resources/logo.png" Width="70" Height="70" Margin="10,0,0,28"/>
+            <TextBlock Text="Bookabook" Foreground="{StaticResource PrimaryBlueBrush}"  FontSize="32" VerticalAlignment="Center"/>
+        </StackPanel>
 
         <ListView x:Name="modelView" Grid.Row="3" Style="{StaticResource EnhancedListView}"/>
 
