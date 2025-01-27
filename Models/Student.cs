@@ -15,12 +15,6 @@ namespace BookabookWPF.Models
         private string? _classLetter;
         private string? _notes;
 
-        public Student()
-        {
-            _firstName = "!!NON_NULLABLE!!";
-            _lastName = "!!NON_NULLABLE!!";
-        }
-
         [PrimaryKey, AutoIncrement]
         public int ID
         {
