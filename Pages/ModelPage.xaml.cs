@@ -48,7 +48,7 @@ namespace BookabookWPF.Pages
             get => (Type)GetValue(ModelTypeProperty);
             set => SetValue(ModelTypeProperty, value);
         }
-        
+
         public bool ChoosingEnabled
         {
             get => (bool)GetValue(ChoosingEnabledProperty);
@@ -229,6 +229,7 @@ namespace BookabookWPF.Pages
             // Close the window
             window?.Close();
         }
+
     }
 }
 
