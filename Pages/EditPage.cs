@@ -83,7 +83,12 @@ namespace BookabookWPF.Pages
 
                 var window = Window.GetWindow(this);
                 if (window != null)
-                {
+                {   
+                    // STYLES
+                    window.Width = 600; // Wider window
+                    window.MinWidth = 500; // Minimum width
+                    window.SizeToContent = SizeToContent.Height; // Auto height
+
                     // Track the last focused element before window starts closing
                     window.PreviewLostKeyboardFocus += (s, e) =>
                     {
@@ -244,6 +249,11 @@ namespace BookabookWPF.Pages
         {
             // Get the stack panel
             var stackPanel = (StackPanel)Content;
+
+            //STYLES
+            stackPanel.Margin = new Thickness(20); // More breathing room
+            stackPanel.Width = 550; // Consistent width
+
             stackPanel.Children.Clear();
 
             // Check if data is available
@@ -260,7 +270,10 @@ namespace BookabookWPF.Pages
                 StackPanel propertyContainer = new()
                 {
                     Orientation = Orientation.Horizontal,
-                    Margin = new Thickness(0, 0, 0, 10)
+
+                    // STYLES
+                    Margin = new Thickness(0, 0, 0, 10), // More vertical spacing
+
                 };
 
                 // Check if the property should be auto-enabled

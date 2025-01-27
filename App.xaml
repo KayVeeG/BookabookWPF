@@ -111,7 +111,7 @@
 
         <!-- TextBox Style -->
         <Style TargetType="TextBox">
-            <Setter Property="Height" Value="40"/>
+            <Setter Property="Height" Value="30"/> <!-- editwindow properview heights -->
             <Setter Property="Width" Value="200"/>
             <Setter Property="Padding" Value="8,4"/>
             <Setter Property="FontSize" Value="14"/>
@@ -121,7 +121,8 @@
 
         <!-- ComboBox Style -->
         <Style TargetType="ComboBox">
-            <Setter Property="Height" Value="40"/>
+            <Setter Property="Height" Value="30"/>
+            <!-- editwindow properview heights -->
             <Setter Property="Width" Value="200"/>
             <Setter Property="Padding" Value="8,4"/>
             <Setter Property="FontSize" Value="14"/>
