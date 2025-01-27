@@ -667,7 +667,12 @@ namespace BookabookWPF.Pages
                         // Make button to choose foreign model instance
                         Button chooseButton = new()
                         {
-                            Content = "Choose" // Set the content
+                            Content = "Choose", // Set the content
+
+                            // STYLES
+                            Margin = new Thickness(0, 0, 5, 0),  // Add right margin for spacing
+                            Height = 30,
+                            HorizontalAlignment = HorizontalAlignment.Stretch
                         };
 
                         // Check if MayNotBeNull attribute is present
@@ -677,7 +682,12 @@ namespace BookabookWPF.Pages
                             // Create a unchoose button
                             unchooseButton = new()
                             {
-                                Content = "Unchoose" // Set the content
+                                Content = "Unchoose", // Set the content
+
+                                // STYLES
+                                Margin = new Thickness(5, 0, 0, 0),  // Add left margin for spacing
+                                Height = 30,
+                                HorizontalAlignment = HorizontalAlignment.Stretch
                             };
                         }
                         #endregion Int32 ForeignKey control generation
