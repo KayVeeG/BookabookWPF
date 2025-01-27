@@ -3,12 +3,29 @@ using BookabookWPF.Attributes;
 using SQLite;
 using BookabookWPF.Services;
 using System.ComponentModel;
+using System.Reflection.Metadata.Ecma335;
 
 namespace BookabookWPF.Models
 {
     [Model]
     public class BookClass : ModelBase
     {
+
+        public static bool ValidateISBN(object? value)
+        {
+            // Check if the value is a string
+            if (value is string isbn)
+            {
+                // Remove all helping "-" characters 
+                isbn = isbn.Replace("-", string.Empty);
+
+                // Check if string only contains digits and has a length of 10 or 13
+                return long.TryParse(isbn, out _) && (isbn.Length == 10 || isbn.Length == 13);
+            }
+            // Otherwise return false
+            return false;
+        }
+
         private int _id;
         private string? _isbn;
         private string? _title;
@@ -32,6 +49,7 @@ namespace BookabookWPF.Models
             }
         }
 
+        [RequiresValidation("BookabookWPF.Models.BookClass.ValidateISBN", "An ISBN has either the format X-XXXXX-XXX-X or XXX-X-XXXX-XXXX-X")]
         public string? ISBN
         {
             get => _isbn;

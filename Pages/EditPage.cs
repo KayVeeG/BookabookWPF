@@ -98,22 +98,23 @@ namespace BookabookWPF.Pages
         }
         protected bool ValidateModelInstances()
         {
-            // Check if model instances have values not null for properties that have MayNotBeNull attribute
+            // Iterate through all model instances
             foreach (var instance in ModelInstances)
             {
                 // Get the properties of the model instance
                 var properties = ((ModelBase)instance).GetDataProperties();
                 foreach (var property in properties)
                 {
+                    // Get the property value
+                    object? value = property.GetValue(instance);
+
                     // Check if the property has MayNotBeNull attribute
                     if (property.GetCustomAttribute<MayNotBeNullAttribute>() != null)
                     {
-                        // Get the property value
-                        object? value = property.GetValue(instance);
+
                         // Check if the value is null
                         if (value is null)
                         {
-                            
                             // Get all the fields that are required
                             var requiredFields = properties.Where(p => p.GetCustomAttribute<MayNotBeNullAttribute>() != null).Select(p => p.Name);
                             // Build the message box message
@@ -122,6 +123,28 @@ namespace BookabookWPF.Pages
                             foreach (var field in requiredFields)
                             {
                                 stringBuilder.AppendLine(field);
+                            }
+                            // Show message box
+                            Xceed.Wpf.Toolkit.MessageBox.Show(stringBuilder.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            // Cancel the window closing
+                            return false;
+                        }
+                    }
+                    // Check if the property has RequiresValidation attribute
+                    if (property.GetCustomAttribute<RequiresValidationAttribute>() != null)
+                    {
+                        // Invoke the validation method on the extracted object
+                        bool isValid = property.GetCustomAttribute<RequiresValidationAttribute>()!.ValidationMethod.Invoke(value);
+                        // If the validation fails
+                        if (!isValid)
+                        {
+                            // Build the message box message
+                            StringBuilder stringBuilder = new();
+                            stringBuilder.AppendLine("Validation failed for " + property.Name);
+                            // Check if there is a user instruction
+                            if (property.GetCustomAttribute<RequiresValidationAttribute>()!.UserInstruction is not null)
+                            {
+                                stringBuilder.AppendLine(property.GetCustomAttribute<RequiresValidationAttribute>()!.UserInstruction);
                             }
                             // Show message box
                             Xceed.Wpf.Toolkit.MessageBox.Show(stringBuilder.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
