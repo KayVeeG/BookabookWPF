@@ -1,21 +1,64 @@
-﻿using System.Windows.Controls;
-using System.Reflection;
+﻿using System;
+using System.ComponentModel;
 using System.Windows;
-using BookabookWPF.Services;
+using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
+using System.Reflection;
+using System.Diagnostics;
+using BookabookWPF.Services.Bookabook.Services;
 
 namespace BookabookWPF.Controls
 {
-    /// <summary>
-    /// Interaktionslogik für FilterDropDown.xaml
-    /// </summary>
-    /// 
-
-    public class MinMaxDateTimeData
+    public class MinMaxDateTimeData : INotifyPropertyChanged
     {
-        public DateTime? MinDate { get; set; }
-        public DateTime? MaxDate { get; set; }
+        private DateTime? minDate;
+        private DateTime? maxDate;
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public DateTime? MinDate
+        {
+            get => minDate;
+            set
+            {
+                if (minDate != value)
+                {
+                    minDate = value;
+                    OnPropertyChanged(nameof(MinDate));
+
+                    // If MaxDate is less than MinDate, update it
+                    if (maxDate.HasValue && minDate.HasValue && maxDate < minDate)
+                    {
+                        MaxDate = minDate;
+                    }
+                }
+            }
+        }
+
+        public DateTime? MaxDate
+        {
+            get => maxDate;
+            set
+            {
+                if (maxDate != value)
+                {
+                    maxDate = value;
+                    OnPropertyChanged(nameof(MaxDate));
+
+                    // If MinDate is greater than MaxDate, update it
+                    if (minDate.HasValue && maxDate.HasValue && minDate > maxDate)
+                    {
+                        MinDate = maxDate;
+                    }
+                }
+            }
+        }
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
 
     public partial class FilterDropDown : UserControl
@@ -23,9 +66,8 @@ namespace BookabookWPF.Controls
 
         // Dependency property for internal access
         public static readonly DependencyProperty PropertyInfoProperty =
-            DependencyProperty.Register(nameof(PropertyInfo), typeof(PropertyInfo), typeof(FilterDropDown), new PropertyMetadata(null, OnPropertyInfoChanged));
-
-
+            DependencyProperty.Register(nameof(PropertyInfo), typeof(PropertyInfo), typeof(FilterDropDown),
+                new PropertyMetadata(null, OnPropertyInfoChanged));
 
         // Public property for external access
         public PropertyInfo PropertyInfo
@@ -74,6 +116,23 @@ namespace BookabookWPF.Controls
             switch (Type.GetTypeCode(Nullable.GetUnderlyingType(PropertyInfo.PropertyType) ?? PropertyInfo.PropertyType))
             {
                 case TypeCode.DateTime:
+                    // Initialize data with database values
+                    var dateTimeData = new MinMaxDateTimeData();
+                    try
+                    {
+                        string tableName = PropertyInfo.DeclaringType!.Name;
+                        string columnName = PropertyInfo.Name;
+
+                        // Get min and max values from database
+                        dateTimeData.MinDate = Globals.Database!.GetMinValue<DateTime?>(tableName, columnName);
+                        dateTimeData.MaxDate = Globals.Database!.GetMaxValue<DateTime?>(tableName, columnName);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Handle any database errors gracefully
+                        Debug.WriteLine($"Error fetching min/max dates: {ex.Message}");
+                    }
+
                     // Create header with property name
                     FrameworkElementFactory headerTextFactory = new FrameworkElementFactory(typeof(TextBlock));
                     headerTextFactory.SetValue(TextBlock.TextProperty, PropertyInfo.Name);
@@ -93,14 +152,12 @@ namespace BookabookWPF.Controls
 
                     // Create Min DatePicker
                     FrameworkElementFactory minDatePickerFactory = new FrameworkElementFactory(typeof(DatePicker));
-                    minDatePickerFactory.SetBinding(
-                        DatePicker.SelectedDateProperty,
-                        new Binding(nameof(MinMaxDateTimeData.MinDate)) { Mode = BindingMode.TwoWay }
-                    );
-
-                    // Add label and DatePicker to the horizontal StackPanel
-                    minRowStackPanelFactory.AppendChild(minLabelFactory);
-                    minRowStackPanelFactory.AppendChild(minDatePickerFactory);
+                    var minBinding = new Binding(nameof(MinMaxDateTimeData.MinDate))
+                    {
+                        Mode = BindingMode.TwoWay,
+                        UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged
+                    };
+                    minDatePickerFactory.SetBinding(DatePicker.SelectedDateProperty, minBinding);
 
                     // Create horizontal StackPanel for Max row
                     FrameworkElementFactory maxRowStackPanelFactory = new FrameworkElementFactory(typeof(StackPanel));
@@ -114,12 +171,16 @@ namespace BookabookWPF.Controls
 
                     // Create Max DatePicker
                     FrameworkElementFactory maxDatePickerFactory = new FrameworkElementFactory(typeof(DatePicker));
-                    maxDatePickerFactory.SetBinding(
-                        DatePicker.SelectedDateProperty,
-                        new Binding(nameof(MinMaxDateTimeData.MaxDate)) { Mode = BindingMode.TwoWay }
-                    );
+                    var maxBinding = new Binding(nameof(MinMaxDateTimeData.MaxDate))
+                    {
+                        Mode = BindingMode.TwoWay,
+                        UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged
+                    };
+                    maxDatePickerFactory.SetBinding(DatePicker.SelectedDateProperty, maxBinding);
 
-                    // Add label and DatePicker to the horizontal StackPanel
+                    // Add Min/Max components to their respective stack panels
+                    minRowStackPanelFactory.AppendChild(minLabelFactory);
+                    minRowStackPanelFactory.AppendChild(minDatePickerFactory);
                     maxRowStackPanelFactory.AppendChild(maxLabelFactory);
                     maxRowStackPanelFactory.AppendChild(maxDatePickerFactory);
 
@@ -129,17 +190,13 @@ namespace BookabookWPF.Controls
 
                     // Set the visual tree of the data template
                     template.VisualTree = mainStackPanelFactory;
-                    // Assign the template to the ComboBox
+
+                    // Assign the template and data context
                     ComboBox.ItemTemplate = template;
-                    // Set the data context of the ComboBox
-                    ComboBox.ItemsSource = new MinMaxDateTimeData[] { new MinMaxDateTimeData() };
-                    // Apply the no-highlight style
+                    ComboBox.ItemsSource = new[] { dateTimeData };
                     ComboBox.ItemContainerStyle = noHighlightStyle;
                     break;
-                default:
-                    break;
             }
-        }   
+        }
     }
 }
-        
