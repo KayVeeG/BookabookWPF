@@ -82,6 +82,8 @@ namespace BookabookWPF.Pages
 
             // Assign the grid view
             GridView gridView = new();
+       
+
             modelView.View = gridView;
 
             // Add columns with templates
@@ -103,7 +105,7 @@ namespace BookabookWPF.Pages
                 {
                     Header = property.Name, // Header
                     CellTemplate = template, // Cell template
-                    Width = 200 // Width
+                    Width = 250 // Width
                 });
             }
 
