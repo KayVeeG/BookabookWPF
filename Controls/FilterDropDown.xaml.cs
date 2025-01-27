@@ -7,6 +7,7 @@ using System.Windows.Media;
 using System.Reflection;
 using System.Diagnostics;
 using BookabookWPF.Services.Bookabook.Services;
+using System.Windows.Input;
 
 namespace BookabookWPF.Controls
 {
@@ -86,6 +87,26 @@ namespace BookabookWPF.Controls
             if (d is FilterDropDown filterDropDown && e.NewValue != e.OldValue)
             {
                 filterDropDown.InitializeUI();
+            }
+        }
+
+        // NOT HIGHLIGHT DROPDOWN SECTION BEGIN
+
+        private void ComboBox_GotFocus(object sender, RoutedEventArgs e)
+        {
+            if (sender is ComboBox comboBox)
+            {
+                // Get the textbox part of the combobox
+                if (comboBox.Template.FindName("PART_EditableTextBox", comboBox) is TextBox textBox)
+                {
+                    textBox.SelectionLength = 0;
+
+                    // Move focus to the toggle button
+                    if (comboBox.Template.FindName("PART_ToggleButton", comboBox) is UIElement toggleButton)
+                    {
+                        toggleButton.Focus();
+                    }
+                }
             }
         }
 

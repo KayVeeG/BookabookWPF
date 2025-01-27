@@ -10,7 +10,7 @@
         <StackPanel Orientation="Vertical">
             <ComboBox x:Name="ComboBox"
           Width="200" 
-          Margin="5">
+          Margin="5" GotFocus="ComboBox_GotFocus">
                 <ComboBox.Style>
                     <Style TargetType="ComboBox">
                         <Setter Property="IsEditable" Value="True"/>
