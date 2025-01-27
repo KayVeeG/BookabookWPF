@@ -1,17 +1,35 @@
 ﻿using BookabookWPF.Services;
 using BookabookWPF.Attributes;
+using System.ComponentModel.DataAnnotations.Schema;
+using SQLite;
 
 namespace BookabookWPF.Models
 {
     [Model]
     public class Rent : ModelBase
     {
+        private int _id;
         private int _bookInstanceId;
         private int _studentId;
         private DateTime _rentSince;
         private DateTime? _rentUntil;
         private DateTime? _returnedDate;
 
+        [PrimaryKey, AutoIncrement]
+        public int ID
+        {
+            get => _id;
+            set
+            {
+                if (_id != value)
+                {
+                    _id = value;
+                    OnPropertyChanged(nameof(ID));
+                }
+            }
+        }
+
+        [ForeignKey("BookabookWPF.Models.BookInstance")]
         public int BookInstanceID
         {
             get => _bookInstanceId;
@@ -25,6 +43,7 @@ namespace BookabookWPF.Models
             }
         }
 
+        [ForeignKey("BookabookWPF.Models.Student")]
         public int StudentID
         {
             get => _studentId;
@@ -81,6 +100,7 @@ namespace BookabookWPF.Models
         {
             return new Rent
             {
+                ID = ID,
                 BookInstanceID = BookInstanceID,
                 StudentID = StudentID,
                 RentSince = RentSince,

@@ -4,13 +4,14 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:local="clr-namespace:BookabookWPF.Pages"
+      xmlns:converters="clr-namespace:BookabookWPF.Converters"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
       Title="ModelPage">
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="50"/>
+            <RowDefinition Height="50" />
             <RowDefinition Height="50"/>
             <RowDefinition Height="50"/>
             <RowDefinition Height="*"/>
@@ -25,11 +26,19 @@
                     <Setter Property="Margin" Value="5,10,5,10"/>
                     <Setter Property="Padding" Value="5,5,5,5"/>
                 </Style>
+                <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+                <converters:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVis"/>
             </StackPanel.Resources>
-            <Button Click="Add_Click" Content="Add"/>
-            <Button Click="Edit_Click" Content="Edit"/>
-            <Button Click="Remove_Click" Content="Remove"/>
+            <Button Click="Add_Click" Content="Add" 
+            Visibility="{Binding ChoosingEnabled, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource InverseBoolToVis}}"/>
+            <Button Click="Edit_Click" Content="Edit"
+            Visibility="{Binding ChoosingEnabled, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource InverseBoolToVis}}"/>
+            <Button Click="Remove_Click" Content="Remove"
+            Visibility="{Binding ChoosingEnabled, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource InverseBoolToVis}}"/>
+            <Button Click="Choose_Click" Content="Choose"
+            Visibility="{Binding ChoosingEnabled, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource BoolToVis}}"/>
         </StackPanel>
-        
+
+
     </Grid>
 </Page>

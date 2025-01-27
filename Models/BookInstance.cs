@@ -1,6 +1,9 @@
 ﻿using SQLite;
 using BookabookWPF.Attributes;
 using BookabookWPF.Services;
+using System.ComponentModel.DataAnnotations.Schema;
+using BookabookWPF.Models;
+using System.Reflection.Metadata;
 
 namespace BookabookWPF.Models
 {
@@ -25,6 +28,7 @@ namespace BookabookWPF.Models
             }
         }
 
+        [ForeignKey("BookabookWPF.Models.BookClass")]
         public int BookClassID
         {
             get => _bookClassId;

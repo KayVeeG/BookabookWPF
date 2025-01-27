@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
 using SQLite;
 
@@ -9,7 +10,7 @@ namespace BookabookWPF.Services
 
         private static readonly Type[] ignoringTypes =
         {
-            typeof(PrimaryKeyAttribute)
+            typeof(PrimaryKeyAttribute),
         };
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -32,6 +33,11 @@ namespace BookabookWPF.Services
                 yield return property;
             }
 
+        }
+
+        public object? GetPrimaryKeyValue()
+        {
+            return GetType().GetProperties().First(p => p.GetCustomAttributes().Any(a => a.GetType() == typeof(PrimaryKeyAttribute))).GetValue(this);
         }
     }
 }

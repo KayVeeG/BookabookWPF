@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Windows;
@@ -8,7 +10,10 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using BookabookWPF.Attributes;
+using BookabookWPF.Controls;
 using BookabookWPF.Services;
+using SQLite;
+using Xceed.Wpf.Toolkit;
 
 namespace BookabookWPF.Pages
 {
@@ -130,6 +135,9 @@ namespace BookabookWPF.Pages
                 control.VerticalAlignment = VerticalAlignment.Center;
                 control.Tag = property;
 
+                // Manually set the model instance values to initial control value for syncing up
+                //UpdatePropertyValues(property, GetControlValue(control));
+
                 // Create checkbox for edit toggle
                 CheckBox? checkBox = new()
                 {
@@ -184,6 +192,9 @@ namespace BookabookWPF.Pages
 
             // Extract the property value from first element
             object? value = property.GetValue(ModelInstances[0]);
+
+            // Check if property is nullable
+            bool isNullable = IsNullable(property);
             #endregion VariablePreperation
 
             #region TypeSwitching
@@ -227,7 +238,6 @@ namespace BookabookWPF.Pages
                         }
                     };
                     #endregion DateTime event subscription
-
                     #region DateTime return
                     // Return the date picker
                     return datePicker;
@@ -241,19 +251,28 @@ namespace BookabookWPF.Pages
                     // Make double up down with third party library
                     var doubleUpDown = new Xceed.Wpf.Toolkit.DoubleUpDown
                     {
-                        Value = Convert.ToDouble(value), // Set the value
+                        Value = value is null ? null : Convert.ToDouble(value), // Set the value
                         FormatString = "F2",  // Display 2 decimal places
-                        Minimum = 0, // Minimum value
+                        Minimum = isNullable ? -0.01 : 0, // Set minimum value to -0.01 if nullable, 0 otherwise
                         Increment = 0.01 // Increment value of 1 cent
                     };
+
                     #endregion Decimal control generation
 
                     #region Decimal event subscription
                     // Subscribe to value changed event
+                    
                     doubleUpDown.ValueChanged += (s, e) =>
                     {
                         if (s is Xceed.Wpf.Toolkit.DoubleUpDown nud && nud.Tag is PropertyInfo prop)
                         {
+                            // Check if user wants to input null
+                            if (isNullable && nud.Value < 0)
+                            {
+                                // Update the property value
+                                nud.Value = null;
+                            }
+
                             // Update the property value
                             UpdatePropertyValues(prop, (decimal?)nud.Value);
                         }
@@ -272,6 +291,7 @@ namespace BookabookWPF.Pages
                     #region Int32 RangeAttribute check
                     // Check for Range attribute
                     var rangeAttr = property.GetCustomAttribute<RangeAttribute>();
+                    var foreignKeyAttr = property.GetCustomAttribute<ForeignKeyAttribute>();
                     if (rangeAttr != null)
                     {
                         #region Int32 Range control generation
@@ -287,23 +307,42 @@ namespace BookabookWPF.Pages
                         };
 
                         // Make slider
-                        Slider slider = new()
+                        Slider slider;
+
+                        // Check if property is nullable
+                        if (isNullable)
                         {
-                            Minimum = Convert.ToDouble(rangeAttr.Minimum), // Extract minimum value from range attribute
-                            Maximum = Convert.ToDouble(rangeAttr.Maximum), // Extract maximum value from range attribute
-                            Value = value is null ? Convert.ToDouble(rangeAttr.Minimum) : Convert.ToDouble(value), // Set the value depending on property value availability
-                            IsSnapToTickEnabled = true, // Snap to tick
-                            TickFrequency = 1, // Tick frequency is 1 since it's an integer
-                        };
+                            // Make nullable slider
+                            slider = new NullableSlider();
+                            // Set min/max before value
+                            slider.Minimum = Convert.ToDouble(rangeAttr.Minimum);
+                            slider.Maximum = Convert.ToDouble(rangeAttr.Maximum);
+                            ((NullableSlider)slider).NullableValue = value is null ? null : Convert.ToDouble(value);
+                        }
+                        else
+                        {
+                            // Make regular slider
+                            slider = new Slider();
+                            // Set min/max before value
+                            slider.Minimum = Convert.ToDouble(rangeAttr.Minimum);
+                            slider.Maximum = Convert.ToDouble(rangeAttr.Maximum);
+                            slider.Value = Convert.ToDouble(value);
+                        }
+
+                        // Set additional slider properties
+                        slider.IsSnapToTickEnabled = true;
+                        slider.TickFrequency = 1;
+
+
                         // Make value displaying label
                         TextBlock label = new();
                         // Bind the label text to slider value
-                        label.SetBinding(TextBlock.TextProperty, new Binding()
+                        /*label.SetBinding(TextBlock.TextProperty, new Binding()
                         {
                             Source = slider, // Source is the slider
-                            Path = new PropertyPath(nameof(Slider.Value)), // Path is the value property of the slider
+                            Path = new PropertyPath(nameof(NullableSlider.NullableValue)), // Path is the value property of the slider
                             StringFormat = "{0:F0}", // Format the value to integer
-                        });
+                        });*/
                         // Set the grid column for label and slider
                         label.SetValue(Grid.ColumnProperty, 0);
                         slider.SetValue(Grid.ColumnProperty, 1);
@@ -315,13 +354,29 @@ namespace BookabookWPF.Pages
 
                         #region Int32 Range event subscription
                         // Subscribe to value changed event
-                        slider.ValueChanged += (s, e) => {
-                            if (s is Slider slider && ((FrameworkElement)slider.Parent).Tag is PropertyInfo property)
+                        if (slider is NullableSlider nullableSlider)
+                        {
+                            nullableSlider.NullableValueChanged += (s, e) =>
                             {
-                                // Update the property value
-                                UpdatePropertyValues(property, Convert.ToInt32(slider.Value));
-                            }
-                        };
+                                if (((FrameworkElement)nullableSlider.Parent).Tag is PropertyInfo property)
+                                {
+                                    // Update the property value with nullable value
+                                    UpdatePropertyValues(property, e.NewValue is null ? null : Convert.ToInt32(e.NewValue));
+                                    Debug.WriteLine(e.NewValue);
+                                }
+                            };
+                        }
+                        else
+                        {
+                            slider.ValueChanged += (s, e) =>
+                            {
+                                if (((FrameworkElement)slider.Parent).Tag is PropertyInfo property)
+                                {
+                                    // Update the property value with non-null value
+                                    UpdatePropertyValues(property, Convert.ToInt32(e.NewValue));
+                                }
+                            };
+                        }
                         #endregion Int32 Range event subscription
 
                         #region Int32 Range return
@@ -329,11 +384,63 @@ namespace BookabookWPF.Pages
                         return grid;
                         #endregion Int32 Range return
                     }
+                    #endregion Int32 RangeAttribute check
+                    #region Int32 ForeignKey check
+                    // Check for ForeignKey attribute
+                    else if (foreignKeyAttr != null)
+                    {
+                        #region Int32 ForeignKey control generation
+                        // Make button to choose foreign model instance
+                        Button button = new()
+                        {
+                            Content = "Choose" // Set the content
+                        };
+                        #endregion Int32 ForeignKey control generation
+                        #region Int32 ForeignKey event subscription
+                        // Subscribe to text changed event
+                        button.Click += (s, e) =>
+                        {
+                            // Create a new instance of the foreign model page
+                            ModelPage modelPage = (ModelPage)Activator.CreateInstance(typeof(ModelPage))!;
+
+                            // Set mode to choosing since it's a foreign key
+                            modelPage.SetValue(ModelPage.ChoosingEnabledProperty, true);
+
+                            // Set the model type of the model page
+                            modelPage.SetValue(ModelPage.ModelTypeProperty, Type.GetType(foreignKeyAttr.Name)!);
+
+                            // Create new window in which the page gets added
+                            new Window()
+                            {
+                                Title = "Choose " + modelPage.ModelType.Name, // Set the title of the window
+                                Content = modelPage, // Set the content of the window to the model page
+                                SizeToContent = SizeToContent.WidthAndHeight, // Size to content
+                                ResizeMode = ResizeMode.CanResize, // Can resize
+                                WindowStartupLocation = System.Windows.WindowStartupLocation.CenterOwner, // Center the window
+                                Owner = Application.Current.MainWindow, // Set the owner of the window
+                                WindowStyle = WindowStyle.ToolWindow    // Set the window style to tool window
+                            }.ShowDialog();
+
+                            // Get the chosen foreign model instance
+                            ModelBase? foreignModel = (ModelBase?)modelPage.ChosenModelInstance;
+                            // Get the primary key value of the foreign model instance
+                            object? primaryKeyValue = foreignModel?.GetPrimaryKeyValue();
+                            // Update the property value
+                            UpdatePropertyValues(property, primaryKeyValue);
+
+                        };
+                        #endregion Int32 ForeignKey event subscription
+                        #region Int32 ForeignKey return
+                        // Return the combo box
+                        return button;
+                        #endregion Int32 ForeignKey return
+                    }
+                    #endregion Int32 ForeignKey check
                     else
                     {
                         goto default;
                     }
-                #endregion Int32 RangeAttribute check
+
                 #endregion Int32
 
                 #region Default
@@ -433,12 +540,33 @@ namespace BookabookWPF.Pages
 
         private object? GetControlValue(FrameworkElement control)
         {
+            // Check if grid is slider grid
+            if (control is Grid grid)
+            {
+                // Get the slider control
+                Slider slider = grid.Children.OfType<Slider>().First();
+
+                // Check if slider is nullable
+                if (slider is NullableSlider nullableSlider)
+                {
+                    // Get the nullable value of the nullable slider
+                    object? nullableValue = nullableSlider.NullableValue;
+                    // Return the nullable value
+                    return nullableValue is null ? null : Convert.ToInt32(nullableValue);
+                }
+                else
+                {
+                    // Return the value of the slider
+                    return Convert.ToInt32(slider.Value);
+                }
+
+            }
+
             return control switch
             {
                 TextBox textBox => textBox.Text,
                 ComboBox comboBox => comboBox.Text,
                 DatePicker datePicker => datePicker.SelectedDate,
-                Grid sliderGrid => Convert.ToInt32(sliderGrid.Children.OfType<Slider>().First().Value),
                 Xceed.Wpf.Toolkit.DoubleUpDown numericUpDown => (decimal?)numericUpDown.Value,
                 _ => null
             };
@@ -466,11 +594,33 @@ namespace BookabookWPF.Pages
             }
         }
 
+        private static bool IsNullable(PropertyInfo property)
+        {
+            var nullabilityContext = new NullabilityInfoContext();
+            var nullabilityInfo = nullabilityContext.Create(property);
+            return nullabilityInfo.WriteState == NullabilityState.Nullable ||
+                   nullabilityInfo.ReadState == NullabilityState.Nullable;
+        }
+
         protected void UpdatePropertyValues(PropertyInfo property, object? value)
         {
+            // Iterate through all model instances
             foreach (var instance in ModelInstances)
             {
+                // Get the property type
+                Type propertyType = property.PropertyType;
+                // Get the setter method
                 MethodInfo? setter = property.GetSetMethod();
+                // Check if the property is nullable and the value is an empty string
+                if (IsNullable(property))
+                {
+                    if (value is string str && str == string.Empty)
+                    {
+                        value = null;
+                    }
+                }
+    
+
                 if (setter != null)
                 {
                     setter.Invoke(instance, new[] { value });

@@ -4,6 +4,8 @@ using BookabookWPF.Services;
 using System.Reflection;
 using System.Collections.ObjectModel;
 using System.Windows.Data;
+using System.Threading.Channels;
+using System.Runtime.InteropServices;
 
 
 namespace BookabookWPF.Pages
@@ -14,6 +16,19 @@ namespace BookabookWPF.Pages
     public partial class ModelPage : Page
     {
 
+        // Dependency property for internal access
+        internal static readonly DependencyPropertyKey ChosenModelInstancePropertyKey =
+            DependencyProperty.RegisterReadOnly(
+                nameof(ChosenModelInstance),
+                typeof(ModelPage),
+                typeof(ModelPage),
+                new PropertyMetadata(null));
+
+
+        // Public property for external access
+        public static readonly DependencyProperty ChosenModelInstanceProperty =
+            ChosenModelInstancePropertyKey.DependencyProperty;
+
         public static readonly DependencyProperty ModelTypeProperty = DependencyProperty.Register(
             nameof(ModelType),
             typeof(Type),
@@ -21,10 +36,28 @@ namespace BookabookWPF.Pages
             new PropertyMetadata(null, OnModelTypeChanged)
         );
 
+        public static readonly DependencyProperty ChoosingEnabledProperty = DependencyProperty.Register(
+            nameof(ChoosingEnabled),
+            typeof(bool),
+            typeof(ModelPage),
+            new PropertyMetadata(false)
+        );
+
         public Type ModelType
         {
             get => (Type)GetValue(ModelTypeProperty);
             set => SetValue(ModelTypeProperty, value);
+        }
+        
+        public bool ChoosingEnabled
+        {
+            get => (bool)GetValue(ChoosingEnabledProperty);
+            set => SetValue(ChoosingEnabledProperty, value);
+        }
+
+        public object? ChosenModelInstance
+        {
+            get => modelView.SelectedItem;
         }
 
         protected ObservableCollection<object>? observableCollection;
@@ -59,7 +92,10 @@ namespace BookabookWPF.Pages
                 // Make display textbox for cell
                 var textBlock = new FrameworkElementFactory(typeof(TextBlock));
                 // Bind text property to item property
-                textBlock.SetBinding(TextBlock.TextProperty, new Binding(property.Name));
+                textBlock.SetBinding(TextBlock.TextProperty, new Binding(property.Name)
+                {
+                    TargetNullValue = "NULL" // Show null when value is null 
+                });
                 template.VisualTree = textBlock;
 
                 // Add column
@@ -91,14 +127,15 @@ namespace BookabookWPF.Pages
             // Open item in edit window
             new Window()
             {
-                Title = "Edit " + ModelType.Name,
-                Content = new EditPage() { ModelInstances = items },
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                ResizeMode = ResizeMode.NoResize,
-                SizeToContent = SizeToContent.WidthAndHeight,
-                Owner = Application.Current.MainWindow,
-                WindowStyle = WindowStyle.ToolWindow
+                Title = "Edit " + ModelType.Name, // Title
+                Content = new EditPage() { ModelInstances = items }, // Content
+                WindowStartupLocation = WindowStartupLocation.CenterOwner, // Startup location
+                ResizeMode = ResizeMode.NoResize, // No resize
+                SizeToContent = SizeToContent.WidthAndHeight, // Size to content
+                Owner = Application.Current.MainWindow, // Owner
+                WindowStyle = WindowStyle.ToolWindow // Tool window
             }.ShowDialog();
+
             // Edit in database
             foreach (var item in items)
             {
@@ -144,6 +181,15 @@ namespace BookabookWPF.Pages
                 observableCollection!.Remove(selectedItem);
             }
 
+        }
+
+        private void Choose_Click(object sender, RoutedEventArgs e)
+        {
+            // Get the window
+            Window window = Window.GetWindow(this);
+
+            // Close the window
+            window?.Close();
         }
     }
 }
