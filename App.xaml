@@ -97,12 +97,6 @@
             <Setter Property="BorderBrush" Value="{StaticResource LightGrayBrush}"/>
         </Style>
 
-        <!-- DatePicker Style -->
-        <Style TargetType="DatePicker">
-            <Setter Property="Height" Value="40"/>
-            <Setter Property="Padding" Value="8,4"/>
-        </Style>
-
         <!-- Slider Style -->
         <Style TargetType="Slider">
             <Setter Property="Margin" Value="8,0"/>

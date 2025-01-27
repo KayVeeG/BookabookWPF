@@ -4,7 +4,6 @@ using BookabookWPF.Converters;
 using BookabookWPF.Services;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using System.Windows;
@@ -12,6 +11,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace BookabookWPF.Pages
 {
@@ -64,52 +64,88 @@ namespace BookabookWPF.Pages
         // List that stores model instances backup for undo
         protected IList<object>? ModelInstancesBackup { get; set; }
         protected bool isLoaded = false;
-
-
+        private IInputElement? lastFocusedElement = null;
         public EditPage()
         {
-
-            // Create a stack panel for content
             Content = new StackPanel
             {
                 Margin = new Thickness(10)
             };
-            
-            // Subscribe to window closed event when loaded (so that window is available
+
+            // Subscribe to window loaded event
             Loaded += (s, e) =>
             {
-                // Set loaded to true
                 isLoaded = true;
-
-                // Initialize ui if model instances are set
                 if (ModelInstances is not null)
                 {
                     InitializeUI();
                 }
 
-                // Subscribe to window closing event
-                Window.GetWindow(this)!.Closing += (s, e) =>
+                var window = Window.GetWindow(this);
+                if (window != null)
                 {
-                    // Evaluate all controls for validation preperation
-                    foreach (var control in ((StackPanel)Content).Children)
+                    // Track the last focused element before window starts closing
+                    window.PreviewLostKeyboardFocus += (s, e) =>
                     {
-                        if (control is FrameworkElement frameworkElement && frameworkElement.Tag is PropertyInfo property)
+                        lastFocusedElement = e.OldFocus;
+                    };
+
+                    window.Closing += (s, e) =>
+                    {
+                        // Store current focused element before validation
+                        var currentFocused = FocusManager.GetFocusedElement(window);
+
+                        // Validate all date pickers
+                        foreach (StackPanel propertyControl in ((StackPanel)Content).Children.OfType<StackPanel>())
                         {
-                            // Get the control value
-                            object? value = GetControlValue(frameworkElement);
-                            // Update the property values
-                            UpdatePropertyValues(property, value);
+                            if (propertyControl != null && propertyControl.Children.OfType<DatePicker>().FirstOrDefault() is DatePicker datePicker)
+                            {
+                                // Store the next control in tab order
+                                IInputElement nextControl = null;
+                                datePicker.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+                                nextControl = FocusManager.GetFocusedElement(window);
+
+                                // Move focus back to date picker to trigger validation
+                                datePicker.Focus();
+                            }
                         }
-                    }
 
-                    // Cancel close if validation fails
-                    e.Cancel = !ValidateModelInstances();
-                };
+                        // Check validation
+                        bool isValid = ValidateModelInstances();
+
+                        // If validation passes, restore focus to last focused element
+                        if (isValid)
+                        {
+                            // If validation passes, restore focus to last focused element
+                            if (lastFocusedElement != null && lastFocusedElement.IsEnabled)
+                            {
+                                Dispatcher.BeginInvoke(new Action(() =>
+                                {
+                                    lastFocusedElement.Focus();
+                                }), DispatcherPriority.Input);
+                            }
+                        }
+                        else
+                        {
+                            // If validation fails, cancel window closing
+                            e.Cancel = true;
+
+                            // Restore original focus if validation failed
+                            if (currentFocused != null && currentFocused.IsEnabled)
+                            {
+                                Dispatcher.BeginInvoke(new Action(() =>
+                                {
+                                    currentFocused.Focus();
+                                }), DispatcherPriority.Input);
+                            }
+                        }
+                    };
+                }
             };
-
         }
         protected bool ValidateModelInstances()
         {
+
             // Iterate through all model instances
             foreach (var instance in ModelInstances)
             {
@@ -366,18 +402,14 @@ namespace BookabookWPF.Pages
             // Handle different property types
             switch (Type.GetTypeCode(propertyType))
             {
-                #region DateTime
-                // Case of DateTime
                 case TypeCode.DateTime:
-                    #region DateTime control generation
                     // Make date picker
                     var datePicker = new DatePicker()
                     {
                         SelectedDate = (DateTime?)value, // Set the value
+                        Tag = property
                     };
-                    #endregion DateTime control generation
 
-                    #region DateTime event subscription
                     // Subscribe to value changed event
                     datePicker.SelectedDateChanged += (s, e) =>
                     {
@@ -387,28 +419,27 @@ namespace BookabookWPF.Pages
                             UpdatePropertyValues(property, datePicker.SelectedDate);
                         }
                     };
-                    // Subscribe to text changed event
-                    datePicker.Loaded += (s, e) => {
-                        var textBox = datePicker.Template.FindName("PART_TextBox", datePicker) as DatePickerTextBox;
-                        if (textBox != null)
+
+                    // Handle text input directly in the Loaded event
+                    datePicker.Loaded += (s, e) =>
+                    {
+                        datePicker.ApplyTemplate();
+                        if (datePicker.Template.FindName("PART_TextBox", datePicker) is DatePickerTextBox textBox)
                         {
-                            textBox.TextChanged += (sender, args) => {
-                                // If text input is a valid date
+                            textBox.TextChanged += (sender, args) =>
+                            {
                                 if (DateTime.TryParse(textBox.Text, out DateTime date))
                                 {
-                                    // Update the property value
                                     UpdatePropertyValues(property, date);
                                 }
                             };
                         }
                     };
-                    #endregion DateTime event subscription
-                    #region DateTime return
+
+
+
                     // Return the date picker
                     return datePicker;
-                #endregion DateTime return
-                #endregion DateTime
-
                 #region Decimal
                 // Case of decimal value (such as price for example)
                 case TypeCode.Decimal:
