@@ -1,19 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using BookabookWPF.Attributes;
+using BookabookWPF.Controls;
+using BookabookWPF.Converters;
+using BookabookWPF.Services;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
-using BookabookWPF.Attributes;
-using BookabookWPF.Controls;
-using BookabookWPF.Services;
-using SQLite;
-using Xceed.Wpf.Toolkit;
+using System.Windows.Input;
 
 namespace BookabookWPF.Pages
 {
@@ -49,20 +47,96 @@ namespace BookabookWPF.Pages
             }
         }
 
+        public static readonly DependencyProperty IsEditingNewItemProperty = 
+            DependencyProperty.Register(
+                nameof(IsEditingNewItem),
+                typeof(bool),
+                typeof(EditPage),
+                new PropertyMetadata(false));
+
+
+        public bool IsEditingNewItem
+        {
+            get => (bool)GetValue(IsEditingNewItemProperty);
+            set => SetValue(IsEditingNewItemProperty, value);
+        }
+
         // List that stores model instances backup for undo
         protected IList<object>? ModelInstancesBackup { get; set; }
+        protected bool isLoaded = false;
+
 
         public EditPage()
         {
+
+            // Create a stack panel for content
             Content = new StackPanel
             {
                 Margin = new Thickness(10)
             };
+            
+            // Subscribe to window closed event when loaded (so that window is available
+            Loaded += (s, e) =>
+            {
+                // Set loaded to true
+                isLoaded = true;
+
+                // Initialize ui if model instances are set
+                if (ModelInstances is not null)
+                {
+                    InitializeUI();
+                }
+
+                // Subscribe to window closing event
+                Window.GetWindow(this)!.Closing += (s, e) =>
+                {
+                    // Cancel close if validation fails
+                    e.Cancel = !ValidateModelInstances();
+                };
+            };
+
+        }
+        protected bool ValidateModelInstances()
+        {
+            // Check if model instances have values not null for properties that have MayNotBeNull attribute
+            foreach (var instance in ModelInstances)
+            {
+                // Get the properties of the model instance
+                var properties = ((ModelBase)instance).GetDataProperties();
+                foreach (var property in properties)
+                {
+                    // Check if the property has MayNotBeNull attribute
+                    if (property.GetCustomAttribute<MayNotBeNullAttribute>() != null)
+                    {
+                        // Get the property value
+                        object? value = property.GetValue(instance);
+                        // Check if the value is null
+                        if (value is null)
+                        {
+                            
+                            // Get all the fields that are required
+                            var requiredFields = properties.Where(p => p.GetCustomAttribute<MayNotBeNullAttribute>() != null).Select(p => p.Name);
+                            // Build the message box message
+                            StringBuilder stringBuilder = new();
+                            stringBuilder.AppendLine("Please fill in all required fields:");
+                            foreach (var field in requiredFields)
+                            {
+                                stringBuilder.AppendLine(field);
+                            }
+                            // Show message box
+                            Xceed.Wpf.Toolkit.MessageBox.Show(stringBuilder.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            // Cancel the window closing
+                            return false;
+                        }
+                    }
+                }
+            }
+            return true;
         }
 
         private static void OnModelInstancesChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (d is EditPage editPage && e.NewValue != e.OldValue && e.NewValue is not null)
+            if (d is EditPage editPage && e.NewValue != e.OldValue && e.NewValue is not null && editPage.isLoaded)
             {
                 editPage.InitializeUI();
             }
@@ -173,15 +247,71 @@ namespace BookabookWPF.Pages
             // Make undo button
             var undoButton = new Button
             {
-                Content = "Undo all edits",
-                Margin = new Thickness(0, 10, 0, 0)
+                Margin = new Thickness(0, 10, 0, 0),
+                Content = "HEHE",
+                Width=200,
+                Height=30
             };
+
+            // Bind content of button to wether it's editing a new item or not
+            undoButton.SetBinding(ContentProperty, new Binding(nameof(IsEditingNewItem))
+            {
+                Source = this,
+                Converter = new BooleanToValueConverter<string>()
+                {
+                    TrueValue = "Load defaults",
+                    FalseValue = "Undo all edits"
+                },
+            });
 
             // Subscribe to click event
             undoButton.Click += UndoButton_Click;
 
             // Add undo button to stack panel
             stackPanel.Children.Add(undoButton);
+
+            // Make finish button
+            var finishButton = new Button()
+            {
+                Margin = new Thickness(0, 10, 0, 0),
+                Content = "Finish",
+                Width = 200,
+                Height = 30
+            };
+            // Subscribe to click event
+            finishButton.Click += (s, e) =>
+            {
+                Window.GetWindow(this)!.Close();
+            };
+
+            // Add finish button to stack panel
+            stackPanel.Children.Add(finishButton);
+
+            // Make cancel editing button if editing a new item
+            if (IsEditingNewItem)
+            {
+                // Make cancel button
+                var cancelButton = new Button
+                {
+                    Margin = new Thickness(0, 10, 0, 0),
+                    Content = "Cancel",
+                    Width = 200,
+                    Height = 30
+                };
+                // Subscribe to click event
+                cancelButton.Click += (s, e) =>
+                {
+                    // Remove the new item
+                    ModelInstances.Clear();
+                    // Close the window
+                    Window.GetWindow(this)!.Close();
+                };
+                // Add cancel button to stack panel
+                stackPanel.Children.Add(cancelButton);
+            }
+
+
+
         }
 
         private FrameworkElement CreateControlForProperty(PropertyInfo property)
@@ -649,6 +779,7 @@ namespace BookabookWPF.Pages
 
         private void UndoButton_Click(object sender, RoutedEventArgs e)
         {
+
             // Load the backup for all properties
             foreach (var property in ((ModelBase)ModelInstances[0]).GetDataProperties())
             {
@@ -657,6 +788,7 @@ namespace BookabookWPF.Pages
             }
             // Reinitialize the UI
             InitializeUI();
+
         }
     }
 }

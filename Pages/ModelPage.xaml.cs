@@ -124,11 +124,15 @@ namespace BookabookWPF.Pages
 
         protected void EditItems(IList<object> items, bool addInstead = false)
         {
+
+            // Backup the items that are being edited (for late removal if adding is aborted)
+            var itemsCopy = new List<object>(items);
+
             // Open item in edit window
             new Window()
             {
                 Title = "Edit " + ModelType.Name, // Title
-                Content = new EditPage() { ModelInstances = items }, // Content
+                Content = new EditPage() { ModelInstances = items, IsEditingNewItem = addInstead }, // Content
                 WindowStartupLocation = WindowStartupLocation.CenterOwner, // Startup location
                 ResizeMode = ResizeMode.NoResize, // No resize
                 SizeToContent = SizeToContent.WidthAndHeight, // Size to content
@@ -136,20 +140,33 @@ namespace BookabookWPF.Pages
                 WindowStyle = WindowStyle.ToolWindow // Tool window
             }.ShowDialog();
 
-            // Edit in / Add to database
-            foreach (var item in items)
+            // If adding was not aborted
+            if (items.Count != 0)
             {
-                if (!addInstead)
+                // Edit in / Add to database
+                foreach (var item in items)
                 {
-                    MethodInfo method = typeof(BookabookDatabase).GetMethod(nameof(BookabookDatabase.Update))!.MakeGenericMethod(item.GetType());
-                    method.Invoke(Globals.Database, new object[] { item });
-                }
-                else
-                {
-                    MethodInfo method = typeof(BookabookDatabase).GetMethod(nameof(BookabookDatabase.Insert))!.MakeGenericMethod(item.GetType());
-                    method.Invoke(Globals.Database, new object[] { item });
+                    if (!addInstead)
+                    {
+                        MethodInfo method = typeof(BookabookDatabase).GetMethod(nameof(BookabookDatabase.Update))!.MakeGenericMethod(item.GetType());
+                        method.Invoke(Globals.Database, new object[] { item });
+                    }
+                    else
+                    {
+                        MethodInfo method = typeof(BookabookDatabase).GetMethod(nameof(BookabookDatabase.Insert))!.MakeGenericMethod(item.GetType());
+                        method.Invoke(Globals.Database, new object[] { item });
+                    }
                 }
             }
+            // If adding was aborted
+            else
+            {
+                foreach (var item in itemsCopy)
+                {
+                    observableCollection!.Remove(item);
+                }
+            }
+
         }
 
         private void Add_Click(object sender, RoutedEventArgs e)

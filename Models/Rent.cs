@@ -59,6 +59,7 @@ namespace BookabookWPF.Models
             }
         }
 
+        [MayNotBeNull]
         public DateTime? RentSince
         {
             get => _rentSince;
