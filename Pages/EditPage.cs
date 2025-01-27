@@ -90,6 +90,18 @@ namespace BookabookWPF.Pages
                 // Subscribe to window closing event
                 Window.GetWindow(this)!.Closing += (s, e) =>
                 {
+                    // Evaluate all controls for validation preperation
+                    foreach (var control in ((StackPanel)Content).Children)
+                    {
+                        if (control is FrameworkElement frameworkElement && frameworkElement.Tag is PropertyInfo property)
+                        {
+                            // Get the control value
+                            object? value = GetControlValue(frameworkElement);
+                            // Update the property values
+                            UpdatePropertyValues(property, value);
+                        }
+                    }
+
                     // Cancel close if validation fails
                     e.Cancel = !ValidateModelInstances();
                 };
@@ -544,15 +556,37 @@ namespace BookabookWPF.Pages
                     else if (foreignKeyAttr != null)
                     {
                         #region Int32 ForeignKey control generation
+
+                        // Make a grid containing the following buttons
+                        Grid grid = new()
+                        {
+                            ColumnDefinitions =
+                            {
+                                new ColumnDefinition() {Width = new GridLength(1, GridUnitType.Auto)},
+                                new ColumnDefinition() {Width = new GridLength(1, GridUnitType.Auto)}
+                            }
+                        };
+
                         // Make button to choose foreign model instance
-                        Button button = new()
+                        Button chooseButton = new()
                         {
                             Content = "Choose" // Set the content
                         };
+
+                        // Check if MayNotBeNull attribute is present
+                        Button? unchooseButton = null;
+                        if (property.GetCustomAttribute<MayNotBeNullAttribute>() != null)
+                        {
+                            // Create a unchoose button
+                            unchooseButton = new()
+                            {
+                                Content = "Unchoose" // Set the content
+                            };
+                        }
                         #endregion Int32 ForeignKey control generation
                         #region Int32 ForeignKey event subscription
-                        // Subscribe to text changed event
-                        button.Click += (s, e) =>
+                        // Subscribe to choose button click event
+                        chooseButton.Click += (s, e) =>
                         {
                             // Create a new instance of the foreign model page
                             ModelPage modelPage = (ModelPage)Activator.CreateInstance(typeof(ModelPage))!;
@@ -583,10 +617,29 @@ namespace BookabookWPF.Pages
                             UpdatePropertyValues(property, primaryKeyValue);
 
                         };
+                        // Check if unchoose button is available
+                        if (unchooseButton is not null)
+                        {
+                            // Subscribe to unchoose button click event
+                            unchooseButton.Click += (s, e) =>
+                            {
+                                // Update the property value to null
+                                UpdatePropertyValues(property, null);
+                            };
+                        }
+
                         #endregion Int32 ForeignKey event subscription
                         #region Int32 ForeignKey return
-                        // Return the combo box
-                        return button;
+                        // Set button grid layout and add to grid
+                        chooseButton.SetValue(Grid.ColumnProperty, 0);
+                        grid.Children.Add(chooseButton);
+                        if (unchooseButton is not null)
+                        {
+                            unchooseButton.SetValue(Grid.ColumnProperty, 1);
+                            grid.Children.Add(unchooseButton);
+                        }
+                        // Return the grid that contains the buttons
+                        return grid;
                         #endregion Int32 ForeignKey return
                     }
                     #endregion Int32 ForeignKey check
@@ -708,12 +761,11 @@ namespace BookabookWPF.Pages
                     // Return the nullable value
                     return nullableValue is null ? null : Convert.ToInt32(nullableValue);
                 }
-                else
+                else if (slider is Slider)
                 {
                     // Return the value of the slider
                     return Convert.ToInt32(slider.Value);
                 }
-
             }
 
             return control switch
@@ -728,6 +780,23 @@ namespace BookabookWPF.Pages
 
         private void SetControlValue(FrameworkElement control, object? value)
         {
+            // Check if grid is slider grid
+            if (control is Grid grid) {
+                // Get the slider control
+                Slider slider = grid.Children.OfType<Slider>().First();
+                // Check if slider is nullable
+                if (slider is NullableSlider nullableSlider)
+                {
+                    // Set the nullable value of the nullable slider
+                    nullableSlider.NullableValue = value is null ? null : Convert.ToDouble(value);
+                }
+                else if (slider is Slider)
+                {
+                    // Set the value of the slider
+                    slider.Value = Convert.ToDouble(value);
+                }
+            }
+
             switch (control)
             {
                 case TextBox textBox:
@@ -738,9 +807,6 @@ namespace BookabookWPF.Pages
                     break;
                 case DatePicker datePicker:
                     datePicker.SelectedDate = (DateTime?)value;
-                    break;
-                case Grid sliderGrid:
-                    sliderGrid.Children.OfType<Slider>().First().Value = Convert.ToDouble(value);
                     break;
                 case Xceed.Wpf.Toolkit.DoubleUpDown numericUpDown:
                     numericUpDown.Value = Convert.ToDouble(value);

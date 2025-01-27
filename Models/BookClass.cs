@@ -23,7 +23,7 @@ namespace BookabookWPF.Models
                 return long.TryParse(isbn, out _) && (isbn.Length == 10 || isbn.Length == 13);
             }
             // Otherwise return false
-            return false;
+            return true;
         }
 
         private int _id;
@@ -39,7 +39,7 @@ namespace BookabookWPF.Models
         public int ID
         {
             get => _id;
-            set
+            set 
             {
                 if (_id != value)
                 {
