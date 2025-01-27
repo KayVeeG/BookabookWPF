@@ -533,12 +533,13 @@ namespace BookabookWPF.Pages
                         // Make value displaying label
                         TextBlock label = new();
                         // Bind the label text to slider value
-                        /*label.SetBinding(TextBlock.TextProperty, new Binding()
+                        label.SetBinding(TextBlock.TextProperty, new Binding()
                         {
                             Source = slider, // Source is the slider
                             Path = new PropertyPath(nameof(NullableSlider.NullableValue)), // Path is the value property of the slider
                             StringFormat = "{0:F0}", // Format the value to integer
-                        });*/
+                            TargetNullValue = " "
+                        });
                         // Set the grid column for label and slider
                         label.SetValue(Grid.ColumnProperty, 0);
                         slider.SetValue(Grid.ColumnProperty, 1);
