@@ -70,10 +70,10 @@
         <controls:FilteringToolbar Grid.Row="1" ModelType="{Binding ModelType, RelativeSource={RelativeSource AncestorType=pages:ModelPage}}"/>
 
         <!-- List View for displaying database -->
-        <ListView x:Name="modelView" Grid.Row="4" Style="{StaticResource EnhancedListView}"/>
+        <ListView x:Name="modelView" Grid.Row="2" Style="{StaticResource EnhancedListView}"/>
 
         <!-- Buttons for adding, editing, removing and choosing items -->
-        <StackPanel Orientation="Horizontal" Grid.Row="5" Background="{StaticResource LightGrayBrush}"
+        <StackPanel Orientation="Horizontal" Grid.Row="3" Background="{StaticResource LightGrayBrush}"
                     VerticalAlignment="Center">
             <Button Click="Add_Click" Content="Add" 
                     Visibility="{Binding ChoosingEnabled, RelativeSource={RelativeSource AncestorType=Page}, 
