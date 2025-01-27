@@ -106,7 +106,7 @@ namespace BookabookWPF.Pages
                             if (propertyControl != null && propertyControl.Children.OfType<DatePicker>().FirstOrDefault() is DatePicker datePicker)
                             {
                                 // Store the next control in tab order
-                                IInputElement nextControl = null;
+                                IInputElement? nextControl = null;
                                 datePicker.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
                                 nextControl = FocusManager.GetFocusedElement(window);
 
