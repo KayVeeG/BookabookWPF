@@ -7,27 +7,26 @@
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              mc:Ignorable="d" 
              Height="40"
-             MinWidth="200">
-    <!-- Remove the outer margin to prevent unwanted spacing -->
-    <Grid>
+             MinWidth="400">
+    <Grid HorizontalAlignment="Left">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="420" MinWidth="160"/>
+            <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
 
         <Border Grid.Column="0" 
                 Background="White"
-                Margin="2">
+                Margin="0">
             <Grid>
                 <TextBox x:Name="SearchTextBox"
                          VerticalAlignment="Center"
                          HorizontalAlignment="Stretch" 
-                         Margin="5,0,25,0"
+                         Width="Auto"
+                         Margin="5,0,5,0"
                          Text="{Binding SearchText, 
                                 RelativeSource={RelativeSource AncestorType=UserControl}, 
                                 Mode=TwoWay, 
                                 UpdateSourceTrigger=PropertyChanged}"/>
-
                 <Button x:Name="ClearButton" 
                         Click="ClearButton_Click"
                         HorizontalAlignment="Right"
@@ -35,7 +34,7 @@
                         Width="20"
                         Height="20"
                         Padding="0"
-                        Margin="0,0,5,0">
+                        Margin="0,0,10,0">
                     <materialDesign:PackIcon Kind="Close" 
                                            Height="16" 
                                            Width="16"/>
@@ -46,7 +45,8 @@
         <Button Grid.Column="1" 
                 Width="40"
                 Height="30"
-                Margin="2"
+                Margin="5, 0, 0, 0"
+                Click="SearchButton_Click"
                 VerticalAlignment="Center">
             <materialDesign:PackIcon Kind="Search"/>
         </Button>
