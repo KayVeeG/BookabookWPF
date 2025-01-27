@@ -63,6 +63,7 @@ namespace BookabookWPF.Models
             }
         }
 
+        [MultipleInDatabase]
         public string? Title
         {
             get => _title;
