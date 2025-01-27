@@ -9,46 +9,85 @@
       d:DesignHeight="450" d:DesignWidth="800"
       Title="ModelPage">
 
-    <Grid Margin="24">
+    <Page.Resources>
+        <!-- Style for GridViewColumn Headers -->
+        <Style x:Key="HeaderStyle" TargetType="{x:Type GridViewColumnHeader}">
+            <Setter Property="Background" Value="{StaticResource LightGrayBrush}"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="BorderBrush" Value="{StaticResource LightGrayBrush}"/>
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource TextGrayBrush}"/>
+        </Style>
+
+        <!-- Extended ListView Style -->
+        <Style x:Key="EnhancedListView" TargetType="{x:Type ListView}" BasedOn="{StaticResource {x:Type ListView}}">
+            <Setter Property="Margin" Value="10"/>
+            <Style.Resources>
+                <!-- Style for ListViewItem -->
+                <Style TargetType="{x:Type ListViewItem}">
+                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                    <Setter Property="BorderBrush" Value="{StaticResource LightGrayBrush}"/>
+                    <Setter Property="Padding" Value="10,8"/>
+                    <Style.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="#E3F2FD"/>
+                            <Setter Property="Foreground" Value="{StaticResource TextGrayBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="{StaticResource LightGrayBrush}"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </Style.Resources>
+        </Style>
+
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <converters:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVis"/>
+        <converters:IntegerToBooleanConverter x:Key="IntegerToBooleanConverter"/>
+    </Page.Resources>
+
+    <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="50" />
+            <RowDefinition Height="100" />
             <RowDefinition Height="50"/>
             <RowDefinition Height="50"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="50"/>
+            <RowDefinition Height="70"/>
         </Grid.RowDefinitions>
 
-        <ListView x:Name="modelView" Grid.Row="3"/>
+        <!-- Bookabook Logo, image then text centered -->
+        <StackPanel Orientation="Horizontal" Grid.Row="0" HorizontalAlignment="Center" Margin="0">
+            <Image Source="/BookabookWPF;component/Resources/logo.png" Width="70" Height="70" Margin="10,0,0,28"/>
+            <TextBlock Text="Bookabook" Foreground="{StaticResource PrimaryBlueBrush}"  FontSize="32" VerticalAlignment="Center"/>
+        </StackPanel>
 
-        <StackPanel Orientation="Horizontal" Grid.Row="4">
-            <StackPanel.Resources>
-                <!-- Only keep the converters, remove redundant styles -->
-                <BooleanToVisibilityConverter x:Key="BoolToVis"/>
-                <converters:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVis"/>
-                <converters:IntegerToBooleanConverter x:Key="IntegerToBooleanConverter"/>
-            </StackPanel.Resources>
+        <ListView x:Name="modelView" Grid.Row="3" Style="{StaticResource EnhancedListView}"/>
 
+        <StackPanel Orientation="Horizontal" Grid.Row="4" Background="{StaticResource LightGrayBrush}"
+                    VerticalAlignment="Center">
             <Button Click="Add_Click" Content="Add" 
                     Visibility="{Binding ChoosingEnabled, RelativeSource={RelativeSource AncestorType=Page}, 
-                              Converter={StaticResource InverseBoolToVis}}"/>
+                    Converter={StaticResource InverseBoolToVis}}"/>
 
             <Button Click="Edit_Click" Content="Edit"
                     IsEnabled="{Binding ElementName=modelView, Path=SelectedItems.Count, 
-                              Converter={StaticResource IntegerToBooleanConverter}}"
+                    Converter={StaticResource IntegerToBooleanConverter}}"
                     Visibility="{Binding ChoosingEnabled, RelativeSource={RelativeSource AncestorType=Page}, 
-                              Converter={StaticResource InverseBoolToVis}}"/>
+                    Converter={StaticResource InverseBoolToVis}}"/>
 
             <Button Click="Remove_Click" Content="Remove"
                     IsEnabled="{Binding ElementName=modelView, Path=SelectedItems.Count, 
-                              Converter={StaticResource IntegerToBooleanConverter}}"
+                    Converter={StaticResource IntegerToBooleanConverter}}"
                     Visibility="{Binding ChoosingEnabled, RelativeSource={RelativeSource AncestorType=Page}, 
-                              Converter={StaticResource InverseBoolToVis}}"/>
+                    Converter={StaticResource InverseBoolToVis}}"/>
 
             <Button Click="Choose_Click" Content="Choose"
                     IsEnabled="{Binding ElementName=modelView, Path=SelectedItems.Count, 
-                              Converter={StaticResource IntegerToBooleanConverter}}"
+                    Converter={StaticResource IntegerToBooleanConverter}}"
                     Visibility="{Binding ChoosingEnabled, RelativeSource={RelativeSource AncestorType=Page}, 
-                              Converter={StaticResource BoolToVis}}"/>
+                    Converter={StaticResource BoolToVis}}"/>
         </StackPanel>
     </Grid>
 </Page>

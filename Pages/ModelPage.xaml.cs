@@ -87,39 +87,54 @@ namespace BookabookWPF.Pages
             // Add columns with templates
             foreach (PropertyInfo property in properties)
             {
-                // Make cell template
+                // Create cell template
                 var template = new DataTemplate();
-                // Make display textbox for cell
-                var textBlock = new FrameworkElementFactory(typeof(TextBlock));
-                // Bind text property to item property
-                textBlock.SetBinding(TextBlock.TextProperty, new Binding(property.Name)
-                {
-                    TargetNullValue = "NULL" // Show null when value is null 
-                });
-                template.VisualTree = textBlock;
+                var factory = new FrameworkElementFactory(typeof(TextBlock));
 
-                // Add column
-                gridView.Columns.Add(new GridViewColumn
+                // Set text binding
+                factory.SetBinding(TextBlock.TextProperty, new Binding(property.Name)
                 {
-                    Header = property.Name, // Header
-                    CellTemplate = template, // Cell template
-                    Width = 200 // Width
+                    TargetNullValue = "NULL"
                 });
+
+                // Add STYLING to match application theme
+                factory.SetValue(TextBlock.PaddingProperty, new Thickness(10, 8, 10, 8));
+                factory.SetValue(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center);
+                factory.SetValue(TextBlock.FontSizeProperty, 14.0); // Match application font size
+
+                template.VisualTree = factory;
+
+                // Create header template
+                var headerTemplate = new DataTemplate();
+                var headerFactory = new FrameworkElementFactory(typeof(TextBlock));
+                headerFactory.SetValue(TextBlock.TextProperty, property.Name);
+                headerFactory.SetValue(TextBlock.FontWeightProperty, FontWeights.SemiBold);
+                headerFactory.SetValue(TextBlock.FontSizeProperty, 14.0); // Match application font size
+                headerTemplate.VisualTree = headerFactory;
+
+                // Add column with styling
+                var column = new GridViewColumn
+                {
+                    HeaderTemplate = headerTemplate,
+                    CellTemplate = template,
+                    Width = 200
+                };
+
+                gridView.Columns.Add(column);
             }
 
-
-
-            // Create a observable collection and bind it to the list view
+            // Create observable collection and bind it to the list view
             observableCollection = new();
             modelView.ItemsSource = observableCollection;
 
-            // Make method to get the items and invoke
-            foreach(var item in (IEnumerable<object>)typeof(BookabookDatabase).GetMethod(nameof(BookabookDatabase.GetList))!.MakeGenericMethod(modelType)!.Invoke(Globals.Database, null)!)
+            // Load data from database
+            foreach (var item in (IEnumerable<object>)typeof(BookabookDatabase)
+                .GetMethod(nameof(BookabookDatabase.GetList))!
+                .MakeGenericMethod(modelType)!
+                .Invoke(Globals.Database, null)!)
             {
                 observableCollection.Add(item);
             }
-
-
         }
 
         protected void EditItems(IList<object> items, bool addInstead = false)
