@@ -192,6 +192,8 @@ namespace BookabookWPF.Pages
             observableCollection!.Add(item!);
             // Edit the item
             EditItems(new List<object>() { item! }, true);
+
+            HandleDatabaseUpdate();
         }
 
         private void Edit_Click(object sender, RoutedEventArgs e)
@@ -203,6 +205,8 @@ namespace BookabookWPF.Pages
                 // Edit the items
                 EditItems(items.Cast<object>().ToList());
             }
+
+            HandleDatabaseUpdate();
         }
 
         private void Remove_Click(object sender, RoutedEventArgs e)
@@ -219,6 +223,8 @@ namespace BookabookWPF.Pages
                 observableCollection!.Remove(selectedItem);
             }
 
+            HandleDatabaseUpdate();
+
         }
 
         private void Choose_Click(object sender, RoutedEventArgs e)
@@ -228,6 +234,14 @@ namespace BookabookWPF.Pages
 
             // Close the window
             window?.Close();
+        }
+
+        // Method to handle database update
+        public void HandleDatabaseUpdate()
+        {
+            // Adjust the default values for filter drop downs in the
+            // filtering toolbar since database min and max values and distinct values may have been changed
+            FilteringToolbar.UpdateFilterDropDowns();
         }
 
     }

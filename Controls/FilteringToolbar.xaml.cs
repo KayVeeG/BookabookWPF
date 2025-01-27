@@ -37,7 +37,7 @@ namespace BookabookWPF.Controls
             get => (Type)GetValue(ModelTypeProperty);
             set => SetValue(ModelTypeProperty, value);
         }
-            
+
         public FilteringToolbar()
         {
             InitializeComponent();
@@ -51,8 +51,6 @@ namespace BookabookWPF.Controls
             }
 
         }
-
-
         protected void InitializeUI()
         {
             // Clear everything up
@@ -73,5 +71,13 @@ namespace BookabookWPF.Controls
             }
         }
 
+        public void UpdateFilterDropDowns()
+        {
+            foreach (FilterDropDown filterDropDown in FilterDropDownPanel.Children)
+            {
+                filterDropDown.InitializeUI();
+            }
+
+        }
     }
 }

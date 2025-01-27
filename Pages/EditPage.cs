@@ -987,5 +987,6 @@ namespace BookabookWPF.Pages
             InitializeUI();
 
         }
+
     }
 }

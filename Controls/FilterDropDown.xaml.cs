@@ -89,10 +89,10 @@ namespace BookabookWPF.Controls
             }
         }
 
-        protected void InitializeUI()
+        public void InitializeUI()
         {
             // Clear everything up
-            ComboBox.Items.Clear();
+            ComboBox.ItemsSource = null;
 
             // Set the Combobox header
             ComboBox.Text = PropertyInfo.Name;
