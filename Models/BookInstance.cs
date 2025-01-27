@@ -11,7 +11,7 @@ namespace BookabookWPF.Models
     public class BookInstance : ModelBase
     {
         private int _id;
-        private int _bookClassId;
+        private int? _bookClassId;
         private string? _bookCondition;
 
         [PrimaryKey, AutoIncrement]
@@ -29,7 +29,8 @@ namespace BookabookWPF.Models
         }
 
         [ForeignKey("BookabookWPF.Models.BookClass")]
-        public int BookClassID
+        [MayNotBeNull]
+        public int? BookClassID
         {
             get => _bookClassId;
             set
@@ -60,7 +61,6 @@ namespace BookabookWPF.Models
         {
             return new BookInstance
             {
-                ID = ID,
                 BookClassID = BookClassID,
                 BookCondition = BookCondition
             };

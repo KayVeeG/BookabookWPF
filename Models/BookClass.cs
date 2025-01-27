@@ -134,7 +134,6 @@ namespace BookabookWPF.Models
         {
             return new BookClass
             {
-                ID = ID,
                 ISBN = ISBN,
                 Title = Title,
                 Author = Author,

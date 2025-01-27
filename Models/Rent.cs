@@ -9,9 +9,9 @@ namespace BookabookWPF.Models
     public class Rent : ModelBase
     {
         private int _id;
-        private int _bookInstanceId;
-        private int _studentId;
-        private DateTime _rentSince;
+        private int? _bookInstanceId;
+        private int? _studentId;
+        private DateTime? _rentSince;
         private DateTime? _rentUntil;
         private DateTime? _returnedDate;
 
@@ -29,8 +29,9 @@ namespace BookabookWPF.Models
             }
         }
 
+        [MayNotBeNull]
         [ForeignKey("BookabookWPF.Models.BookInstance")]
-        public int BookInstanceID
+        public int? BookInstanceID
         {
             get => _bookInstanceId;
             set
@@ -43,8 +44,9 @@ namespace BookabookWPF.Models
             }
         }
 
+        [MayNotBeNull]
         [ForeignKey("BookabookWPF.Models.Student")]
-        public int StudentID
+        public int? StudentID
         {
             get => _studentId;
             set
@@ -57,7 +59,7 @@ namespace BookabookWPF.Models
             }
         }
 
-        public DateTime RentSince
+        public DateTime? RentSince
         {
             get => _rentSince;
             set
@@ -100,7 +102,6 @@ namespace BookabookWPF.Models
         {
             return new Rent
             {
-                ID = ID,
                 BookInstanceID = BookInstanceID,
                 StudentID = StudentID,
                 RentSince = RentSince,

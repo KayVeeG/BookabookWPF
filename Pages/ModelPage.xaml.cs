@@ -122,7 +122,7 @@ namespace BookabookWPF.Pages
 
         }
 
-        protected void EditItems(IList<object> items)
+        protected void EditItems(IList<object> items, bool addInstead = false)
         {
             // Open item in edit window
             new Window()
@@ -136,11 +136,19 @@ namespace BookabookWPF.Pages
                 WindowStyle = WindowStyle.ToolWindow // Tool window
             }.ShowDialog();
 
-            // Edit in database
+            // Edit in / Add to database
             foreach (var item in items)
             {
-                MethodInfo method = typeof(BookabookDatabase).GetMethod(nameof(BookabookDatabase.Update))!.MakeGenericMethod(item.GetType());
-                method.Invoke(Globals.Database, new object[] { item });
+                if (!addInstead)
+                {
+                    MethodInfo method = typeof(BookabookDatabase).GetMethod(nameof(BookabookDatabase.Update))!.MakeGenericMethod(item.GetType());
+                    method.Invoke(Globals.Database, new object[] { item });
+                }
+                else
+                {
+                    MethodInfo method = typeof(BookabookDatabase).GetMethod(nameof(BookabookDatabase.Insert))!.MakeGenericMethod(item.GetType());
+                    method.Invoke(Globals.Database, new object[] { item });
+                }
             }
         }
 
@@ -148,12 +156,10 @@ namespace BookabookWPF.Pages
         {
             // Create new item
             var item = Activator.CreateInstance(ModelType!);
-            // Add to database
-            Globals.Database!.Insert(item);
             // Add to model view
             observableCollection!.Add(item!);
             // Edit the item
-            EditItems(new List<object>() { item! });
+            EditItems(new List<object>() { item! }, true);
         }
 
         private void Edit_Click(object sender, RoutedEventArgs e)

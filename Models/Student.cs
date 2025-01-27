@@ -9,8 +9,8 @@ namespace BookabookWPF.Models
     public class Student : ModelBase
     {
         private int _id;
-        private string _firstName;
-        private string _lastName;
+        private string? _firstName;
+        private string? _lastName;
         private int? _fifthClassYear;
         private string? _classLetter;
         private string? _notes;
@@ -35,8 +35,9 @@ namespace BookabookWPF.Models
             }
         }
 
+        [MayNotBeNull]
         [MultipleInDatabase]
-        public string FirstName
+        public string? FirstName
         {
             get => _firstName;
             set
@@ -49,7 +50,8 @@ namespace BookabookWPF.Models
             }
         }
 
-        public string LastName
+        [MayNotBeNull]
+        public string? LastName
         {
             get => _lastName;
             set
@@ -105,7 +107,6 @@ namespace BookabookWPF.Models
         {
             return new Student
             {
-                ID = ID,
                 FirstName = FirstName,
                 LastName = LastName,
                 FifthClassYear = FifthClassYear,
