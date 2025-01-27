@@ -25,6 +25,7 @@ namespace BookabookWPF.Services
                 method?.Invoke(this, null);
             }
 
+            /*
             if (GetList<BookClass>().Count == 0)
             {
                 var dummyData = new List<BookClass>
@@ -37,6 +38,7 @@ namespace BookabookWPF.Services
                 };
                 InsertAll(dummyData);
             }
+            */
         }
     }
 }
