@@ -15,6 +15,7 @@ namespace BookabookWPF.Controls
 
         public event EventHandler<ValueChangedEventArgs<double?>>? NullableValueChanged;
         protected bool isControlLoaded = false;
+        private bool isInitializing = true;
 
         public NullableSlider()
         {
@@ -27,14 +28,24 @@ namespace BookabookWPF.Controls
                 double originalMin = Minimum;
                 // Set minimum one less than original
                 Minimum = originalMin - 1;
-                // Ensure initial value is at minimum for null state
-                Value = Minimum;
+
                 isControlLoaded = true;
+                isInitializing = false;
+
+                // Set the value after initialization
+                if (NullableValue.HasValue)
+                {
+                    Value = NullableValue.Value;
+                }
+                else
+                {
+                    Value = Minimum;
+                }
             };
 
             ValueChanged += (s, e) =>
             {
-                if (!isControlLoaded) return;
+                if (!isControlLoaded || isInitializing) return;
 
                 if (Value <= Minimum)
                 {
@@ -52,7 +63,7 @@ namespace BookabookWPF.Controls
             get => (double?)GetValue(NullableValueProperty);
             set
             {
-                if (value.HasValue && value.Value <= Minimum)
+                if (value.HasValue && value.Value <= Minimum && !isInitializing)
                 {
                     value = null;
                 }
@@ -62,7 +73,7 @@ namespace BookabookWPF.Controls
 
         private static void OnNullableValueChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (d is NullableSlider slider && slider.isControlLoaded)
+            if (d is NullableSlider slider && slider.isControlLoaded && !slider.isInitializing)
             {
                 if (e.NewValue is double newValue)
                 {
@@ -80,6 +91,7 @@ namespace BookabookWPF.Controls
             }
         }
     }
+
 
 
     public class ValueChangedEventArgs<T> : EventArgs

@@ -486,13 +486,14 @@ namespace BookabookWPF.Pages
                         // Subscribe to value changed event
                         if (slider is NullableSlider nullableSlider)
                         {
+                            // Set the initial value before binding
+                            nullableSlider.NullableValue = value is null ? null : Convert.ToDouble(value);
+
                             nullableSlider.NullableValueChanged += (s, e) =>
                             {
                                 if (((FrameworkElement)nullableSlider.Parent).Tag is PropertyInfo property)
                                 {
-                                    // Update the property value with nullable value
                                     UpdatePropertyValues(property, e.NewValue is null ? null : Convert.ToInt32(e.NewValue));
-                                    Debug.WriteLine(e.NewValue);
                                 }
                             };
                         }
