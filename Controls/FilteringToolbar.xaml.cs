@@ -72,6 +72,8 @@ namespace BookabookWPF.Controls
                     continue;
 
                 FilterDropDown filterDropDown = new() { PropertyInfo = property };
+                // Subscribe to the FilterChanged event
+                filterDropDown.FilterChanged += OnFilterChanged;
                 FilterDropDownPanel.Children.Add(filterDropDown);
             }
         }
@@ -84,5 +86,11 @@ namespace BookabookWPF.Controls
             }
 
         }
+
+        private void OnFilterChanged(object? sender, Filter e)
+        {
+            
+        }
+
     }
 }
