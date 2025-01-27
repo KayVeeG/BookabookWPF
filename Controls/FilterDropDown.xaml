@@ -9,8 +9,22 @@
     <Grid>
         <StackPanel Orientation="Vertical">
             <ComboBox x:Name="ComboBox"
-                      Width="200" 
-                      Margin="5">
+          Width="200" 
+          Margin="5">
+                <ComboBox.Style>
+                    <Style TargetType="ComboBox">
+                        <Setter Property="IsEditable" Value="True"/>
+                        <Setter Property="Text" Value="{Binding PropertyInfo.Name, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=OneWay}"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsDropDownOpen" Value="False">
+                                <Setter Property="IsReadOnly" Value="True"/>
+                            </Trigger>
+                            <Trigger Property="IsDropDownOpen" Value="True">
+                                <Setter Property="IsReadOnly" Value="False"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </ComboBox.Style>
             </ComboBox>
         </StackPanel>
     </Grid>
