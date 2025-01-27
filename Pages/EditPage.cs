@@ -83,7 +83,12 @@ namespace BookabookWPF.Pages
 
                 var window = Window.GetWindow(this);
                 if (window != null)
-                {
+                {   
+                    // STYLES
+                    window.Width = 600; // Wider window
+                    window.MinWidth = 500; // Minimum width
+                    window.SizeToContent = SizeToContent.Height; // Auto height
+
                     // Track the last focused element before window starts closing
                     window.PreviewLostKeyboardFocus += (s, e) =>
                     {
@@ -244,6 +249,11 @@ namespace BookabookWPF.Pages
         {
             // Get the stack panel
             var stackPanel = (StackPanel)Content;
+
+            //STYLES
+            stackPanel.Margin = new Thickness(20); // More breathing room
+            stackPanel.Width = 550; // Consistent width
+
             stackPanel.Children.Clear();
 
             // Check if data is available
@@ -260,7 +270,10 @@ namespace BookabookWPF.Pages
                 StackPanel propertyContainer = new()
                 {
                     Orientation = Orientation.Horizontal,
-                    Margin = new Thickness(0, 0, 0, 10)
+
+                    // STYLES
+                    Margin = new Thickness(0, 0, 0, 15), // More vertical spacing
+
                 };
 
                 // Check if the property should be auto-enabled
@@ -271,12 +284,20 @@ namespace BookabookWPF.Pages
                 {
                     Content = property.Name + ":",
                     Width = 150,
-                    VerticalAlignment = VerticalAlignment.Center
+                    VerticalAlignment = VerticalAlignment.Center,
+
+                    // STYLES
+                    FontSize = 14 // Larger font
                 };
 
                 // Create the appropriate control based on property type and attributes
                 FrameworkElement control = CreateControlForProperty(property);
-                control.Width = 200;
+
+                // STYLES
+                control.Width = 250; // Wider controls
+                control.Height = 30; // Consistent height
+
+
                 control.VerticalAlignment = VerticalAlignment.Center;
                 control.Tag = property;
 
@@ -407,7 +428,16 @@ namespace BookabookWPF.Pages
                     var datePicker = new DatePicker()
                     {
                         SelectedDate = (DateTime?)value, // Set the value
-                        Tag = property
+                        Tag = property,
+
+                        // STYLES
+                        Height = 30,
+                        Width = 250,
+                        FontSize = 14,
+                        Padding = new Thickness(0, 0, 0, 0),
+                        Margin = new Thickness(0, 0, 0, 0),
+                        VerticalAlignment = VerticalAlignment.Center,
+                        VerticalContentAlignment = VerticalAlignment.Center
                     };
 
                     // Subscribe to value changed event
@@ -422,10 +452,39 @@ namespace BookabookWPF.Pages
 
                     // Handle text input directly in the Loaded event
                     datePicker.Loaded += (s, e) =>
-                    {
-                        datePicker.ApplyTemplate();
-                        if (datePicker.Template.FindName("PART_TextBox", datePicker) is DatePickerTextBox textBox)
+                    {   
+
+                        // STYLES - Center Datepicker Icon
+                        if (s is DatePicker dp)
                         {
+                            dp.ApplyTemplate();
+                            if (dp.Template.FindName("PART_Button", dp) is Button button)
+                            {
+                                button.VerticalAlignment = VerticalAlignment.Center;
+                            }
+                            if (dp.Template.FindName("PART_TextBox", dp) is DatePickerTextBox otherTextBox)
+                            {
+                                otherTextBox.VerticalAlignment = VerticalAlignment.Center;
+                                otherTextBox.VerticalContentAlignment = VerticalAlignment.Center;
+                            }
+                        }
+
+                        
+                        datePicker.ApplyTemplate();
+
+                        // STYLES - Center Datepicker Text
+
+                        if (datePicker.Template.FindName("PART_TextBox", datePicker) is DatePickerTextBox textBox)
+                        {   
+                            textBox.VerticalContentAlignment = VerticalAlignment.Center;
+                            textBox.Padding = new Thickness(0, 0, 0, 0);
+                            textBox.Height = 50;
+                            textBox.Width = 200;
+                            textBox.HorizontalAlignment = HorizontalAlignment.Left;
+                            textBox.VerticalAlignment = VerticalAlignment.Center;
+
+
+
                             textBox.TextChanged += (sender, args) =>
                             {
                                 if (DateTime.TryParse(textBox.Text, out DateTime date))
@@ -450,7 +509,13 @@ namespace BookabookWPF.Pages
                         Value = value is null ? null : Convert.ToDouble(value), // Set the value
                         FormatString = "F2",  // Display 2 decimal places
                         Minimum = isNullable ? -0.01 : 0, // Set minimum value to -0.01 if nullable, 0 otherwise
-                        Increment = 0.01 // Increment value of 1 cent
+                        Increment = 0.01, // Increment value of 1 cent
+
+                        // STYLES
+                        Height = 30,
+                        FontSize = 14,
+                        Padding = new Thickness(5, 2, 5, 2),
+                        TextAlignment = TextAlignment.Left
                     };
 
                     #endregion Decimal control generation
@@ -602,7 +667,12 @@ namespace BookabookWPF.Pages
                         // Make button to choose foreign model instance
                         Button chooseButton = new()
                         {
-                            Content = "Choose" // Set the content
+                            Content = "Choose", // Set the content
+
+                            // STYLES
+                            Margin = new Thickness(0, 0, 5, 0),  // Add right margin for spacing
+                            Height = 30,
+                            HorizontalAlignment = HorizontalAlignment.Stretch
                         };
 
                         // Check if MayNotBeNull attribute is present
@@ -612,7 +682,12 @@ namespace BookabookWPF.Pages
                             // Create a unchoose button
                             unchooseButton = new()
                             {
-                                Content = "Unchoose" // Set the content
+                                Content = "Unchoose", // Set the content
+
+                                // STYLES
+                                Margin = new Thickness(5, 0, 0, 0),  // Add left margin for spacing
+                                Height = 30,
+                                HorizontalAlignment = HorizontalAlignment.Stretch
                             };
                         }
                         #endregion Int32 ForeignKey control generation
